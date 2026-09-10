@@ -1,4 +1,4 @@
-LIVRO + - SISTEMA WEB BIBLIOTECA (PROJETO PFC)
+# LIVRO + - SISTEMA WEB BIBLIOTECA (PROJETO PFC)
 
 A Livro+ é um sistema web de biblioteca educacional que conecta professores, alunos e biblioteca, permitindo relacionar livros às disciplinas, consultar a disponibilidade dos exemplares e facilitar o acesso dos alunos a materiais recomendados pelos docentes, além de auxiliar no gerenciamento dos empréstimos e devoluções.
 
