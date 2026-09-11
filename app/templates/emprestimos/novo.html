@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Novo empréstimo{% endblock %}
+{% block content %}
+  <h1 class="h3 mb-3">Novo empréstimo</h1>
+
+  {% if emprestimos_atrasados %}
+    <div class="alert alert-warning">
+      <strong>Atenção:</strong> os usuários abaixo possuem devolução em atraso e não
+      podem realizar novos empréstimos até regularizar a pendência.
+      <ul class="mb-0 mt-2">
+        {% for emprestimo in emprestimos_atrasados %}
+          <li>
+            {{ emprestimo.usuario.nome }} — exemplar {{ emprestimo.exemplar.codigo_patrimonio }}
+            ({{ emprestimo.exemplar.livro.titulo }}), devolução prevista em
+            {{ emprestimo.data_prevista_devolucao.strftime("%d/%m/%Y") }}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if not exemplares %}
+    <div class="alert alert-info">
+      Não há exemplares disponíveis para empréstimo no momento.
+      <a href="{{ url_for('exemplares.listar') }}">Ver exemplares</a>.
+    </div>
+  {% else %}
+    <form method="post" class="col-lg-6">
+      <div class="mb-3">
+        <label for="exemplar_id" class="form-label">Exemplar disponível *</label>
+        <select class="form-select" id="exemplar_id" name="exemplar_id" required>
+          <option value="" {% if not exemplar_id_preselecionado %}selected{% endif %} disabled>
+            Selecione um exemplar
+          </option>
+          {% for exemplar in exemplares %}
+            <option value="{{ exemplar.id }}"
+              {% if exemplar_id_preselecionado == exemplar.id %}selected{% endif %}>
+              {{ exemplar.codigo_patrimonio }} — {{ exemplar.livro.titulo }}
+            </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Somente exemplares com status "Disponível" aparecem aqui.</div>
+      </div>
+      <div class="mb-3">
+        <label for="usuario_id" class="form-label">Usuário *</label>
+        <select class="form-select" id="usuario_id" name="usuario_id" required>
+          <option value="" selected disabled>Selecione um usuário</option>
+          {% for usuario in usuarios %}
+            <option value="{{ usuario.id }}" {% if usuario.id in usuarios_bloqueados_ids %}disabled{% endif %}>
+              {{ usuario.nome }} ({{ usuario.email }}){% if usuario.id in usuarios_bloqueados_ids %} — bloqueado: devolução em atraso{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Registrar empréstimo</button>
+      <a href="{{ url_for('emprestimos.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </form>
+  {% endif %}
+{% endblock %}
