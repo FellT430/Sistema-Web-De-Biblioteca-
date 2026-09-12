@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block titulo %}Painel - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h3>Bem-vindo(a), {{ usuario.nome }}!</h3>
+        <p class="text-muted">
+            Perfil: <span class="badge bg-primary text-uppercase">{{ usuario.perfil }}</span>
+        </p>
+
+        {% if usuario.perfil == "aluno" %}
+            <p>Aqui o aluno poderá consultar livros disponíveis e recomendações dos professores.</p>
+        {% elif usuario.perfil == "professor" %}
+            <p>Aqui o professor poderá relacionar livros às disciplinas e recomendar leituras aos alunos.</p>
+        {% elif usuario.perfil == "admin" %}
+            <p>Aqui o administrador poderá gerenciar o acervo, empréstimos e usuários do sistema.</p>
+            <a href="{{ url_for('livros.listar') }}" class="btn btn-primary">Gerenciar livros</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if usuarios is defined %}
+<div class="card shadow-sm mt-4">
+    <div class="card-body p-4">
+        <h5 class="mb-3">Usuários cadastrados (área administrativa)</h5>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Perfil</th>
+                    <th>Cadastrado em</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr>
+                    <td>{{ u.nome }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ u.perfil }}</td>
+                    <td>{{ u.criado_em.strftime("%d/%m/%Y %H:%M") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
