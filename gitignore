@@ -1,0 +1,47 @@
+# ==== Ambiente virtual Python ====
+back/venv/
+venv/
+env/
+.venv/
+
+# ==== Cache e bytecode Python ====
+__pycache__/
+*.pyc
+*.pyo
+
+# ==== Segredos / variáveis de ambiente ====
+# NUNCA suba o .env real (senhas, chaves) — só o .env.example fica no Git
+.env
+back/.env
+
+# ==== Banco de dados local ====
+*.db
+*.sqlite
+*.sqlite3
+back/app.db
+
+# ==== Uploads/arquivos gerados pelo usuário (se existir) ====
+front/static/uploads/
+
+# ==== Logs ====
+*.log
+
+# ==== Arquivos de IDE/editor ====
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ==== Arquivos de sistema operacional ====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==== Arquivos de teste/cobertura ====
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==== Compactados que às vezes sobram na pasta por engano ====
+*.rar
+*.zip
