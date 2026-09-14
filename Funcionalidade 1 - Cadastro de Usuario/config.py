@@ -5,7 +5,6 @@ load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-
 class Config:
     """Configurações centrais da aplicação.
 
