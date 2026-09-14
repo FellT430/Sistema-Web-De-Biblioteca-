@@ -8,7 +8,7 @@ from models import db, Usuario
 from routes import auth_bp
 from livros_routes import livros_bp
 
-# Caminhos para as pastas de front-end (templates e static ficam separados do back-end)
+
 FRONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "front")
 TEMPLATE_DIR = os.path.join(FRONT_DIR, "templates")
 STATIC_DIR = os.path.join(FRONT_DIR, "static")
