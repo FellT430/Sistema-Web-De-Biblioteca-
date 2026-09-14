@@ -3,7 +3,6 @@ from functools import wraps
 from flask import redirect, url_for, abort
 from flask_login import current_user
 
-
 def perfil_requerido(*perfis_permitidos):
     """Decorator simples de controle de acesso por perfil (RBAC).
 
