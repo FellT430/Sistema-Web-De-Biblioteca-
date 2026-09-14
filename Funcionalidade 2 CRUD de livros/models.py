@@ -7,11 +7,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 db = SQLAlchemy()
 
 
-# NOTA: Usuario está aqui apenas como dependência — o CRUD de livros é
-# protegido por login + RBAC (perfil "admin"), então precisa deste modelo
-# para autenticar. A funcionalidade "dona" deste pacote é a classe Livro,
-# abaixo. O cadastro/edição de Usuario pertence ao pacote
-# "Funcionalidade Cadastro".
+
+
 class Usuario(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
