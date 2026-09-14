@@ -1,55 +1,65 @@
-# LIVRO + - SISTEMA WEB BIBLIOTECA (PROJETO PFC)
+# Funcionalidade: CRUD de Livros (Livro +)
 
-A Livro+ é um sistema web de biblioteca educacional que conecta professores, alunos e biblioteca, permitindo relacionar livros às disciplinas, consultar a disponibilidade dos exemplares e facilitar o acesso dos alunos a materiais recomendados pelos docentes, além de auxiliar no gerenciamento dos empréstimos e devoluções.
+Este pacote contém a funcionalidade de cadastro/edição/exclusão de livros
+do sistema Livro +.
 
-# TECNOLOGIAS E ESTRUTURAS DO SISTEMA
-FRONT-END: Uso de HTML e CSS para estilização, desenvolvimento e design das páginas. JavaScript e Bootstrap serão utilizados para desenvolver e estruturar a interface do sistema.
+## O que está aqui
 
-BACK-END: Python e Flask serão utilizados no desenvolvimento do back-end, realizando a conexão com o banco de dados MySQL (via SQLAlchemy) e com a Google Books API, utilizada para buscar as informações dos livros.
+- `back/app.py` — application factory, registra o blueprint `livros_bp`
+- `back/livros_routes.py` — rotas `/livros`, `/livros/novo`, `/livros/<id>/editar`, `/livros/<id>/excluir`
+- `back/models.py` — modelo `Livro` (a funcionalidade própria deste pacote) +
+  modelo `Usuario` (incluído só como **dependência**, pois o CRUD exige login)
+- `back/forms.py` — `LivroForm`
+- `back/decorators.py` — RBAC (`perfil_requerido`), adaptado para este pacote isolado
+- `front/templates/livros/` — `listar.html`, `form.html`
+- `front/static/css/style.css`
 
-BANCO DE DADOS: MySQL, administrado com o MySQL Workbench, e SQLAlchemy como ORM — para armazenar usuários, livros, exemplares e empréstimos, e facilitar a comunicação entre o Python e o banco. A integração externa será feita pela Google Books API para buscar automaticamente as informações dos livros (título, autor, ISBN, capa, descrição), sem precisar cadastrar tudo manualmente. A classificação obtida pela API também será utilizada pelo sistema para verificar se o livro está de acordo com as áreas definidas no projeto. A segurança e a automação de tarefas serão realizadas utilizando bibliotecas, seguindo as diretrizes da LGPD no tratamento de dados pessoais, como:
+##  Dependência importante
 
-bcrypt / Werkzeug — para gerar e verificar o hash das senhas dos usuários.
-python-dotenv — para gerenciar e carregar variáveis de ambiente, permitindo manter configurações e informações sensíveis, como chaves de API, fora do código-fonte.
-pyotp — para autenticação de dois fatores (2FA), compatível com o Google Authenticator.
-APScheduler — para automatizar tarefas, como verificar empréstimos atrasados e disparar notificações.
-deep-translator — para traduzir informações vindas da API quando necessário.
+O CRUD de livros é **restrito ao perfil `admin`** — por isso, mesmo isolado,
+este pacote precisa de login funcionando. No projeto completo, esse login é
+feito pelo pacote **"Funcionalidade Cadastro"**.
 
+Para permitir testar este pacote sozinho, incluí um **login simplificado de
+teste** (`/login-teste`, em `app.py` e `front/templates/login_teste.html`) —
+ele não tem o formulário validado nem CSRF do cadastro real, serve só para
+autenticar e acessar `/livros`.
 
-# CONTAS COM EXEMPLOS
+## Como rodar e testar isoladamente
 
-Perfil	Domínio de e-mail	O que pode fazer hoje
-Aluno	@aluno.com	Login e acesso ao dashboard
-Professor	@professor.com	Login e acesso ao dashboard
-Admin/Bibliotecário	@bibliotecaadm.com	Login, dashboard, gestão de usuários e CRUD de livros
+```bash
+cd back
+python -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+python app.py
+```
 
+Como este banco começa vazio, crie um usuário admin manualmente antes de
+testar (com o servidor rodando, em outro terminal):
 
-O aluno e o professor ainda não têm telas próprias além do dashboard — as funcionalidades específicas de cada perfil (relacionar livros a disciplinas, recomendações, empréstimos) fazem parte das próximas etapas.
+```bash
+cd back
+source venv/bin/activate
+python -c "
+from app import app
+from models import db, Usuario
+with app.app_context():
+    u = Usuario(nome='Admin Teste', email='admin@bibliotecaadm.com', perfil='admin')
+    u.set_senha('123456')
+    db.session.add(u)
+    db.session.commit()
+    print('Usuário criado.')
+"
+```
 
-# Como funciona o cadastro e login
+Depois acesse **http://127.0.0.1:5000/login-teste**, entre com
+`admin@bibliotecaadm.com` / `123456`, e você será redirecionado para
+`/livros`.
 
-Regra de negócio central: o usuário não escolhe seu perfil no formulário de cadastro. O perfil é detectado automaticamente pelo domínio do e-mail informado (função detectar_perfil_pelo_email, em routes.py):
+## Observação
 
-nome@aluno.com → perfil aluno
-nome@professor.com → perfil professor
-nome@bibliotecaadm.com → perfil admin
-
-Fluxo de cadastro (/cadastro):
-
-Usuário preenche nome, e-mail e senha (com confirmação).
-O sistema verifica se o e-mail já existe.
-O domínio do e-mail é comparado à lista de domínios válidos (Config.DOMINIOS_PERFIL). Se não for reconhecido, o cadastro é recusado.
-A senha é transformada em hash (werkzeug.security) — nunca é salva em texto puro.
-Usuário é criado no banco e redirecionado para o login.
-
-Fluxo de login (/login):
-
-Usuário informa e-mail e senha.
-O sistema busca o usuário pelo e-mail, confere a senha (hash) e se a conta está ativa.
-Se tudo estiver correto, a sessão é criada com Flask-Login e o usuário vai para o /dashboard.
-
-Outras rotas relacionadas:
-
-/logout — encerra a sessão.
-/dashboard — conteúdo do usuário logado.
-/admin — lista todos os usuários cadastrados (só para o perfil admin).
+`base.html`, `style.css`, `config.py` e `decorators.py` são compartilhados
+com a pasta "Funcionalidade Cadastro" — aparecem duplicados (com o ajuste
+de rota já mencionado) para que cada pacote rode de forma independente.
