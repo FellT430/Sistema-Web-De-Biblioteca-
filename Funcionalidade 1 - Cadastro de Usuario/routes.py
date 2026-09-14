@@ -7,7 +7,6 @@ from decorators import perfil_requerido
 
 auth_bp = Blueprint("auth", __name__)
 
-
 def detectar_perfil_pelo_email(email: str):
     """Detecta o perfil do usuário a partir do domínio do e-mail.
 
