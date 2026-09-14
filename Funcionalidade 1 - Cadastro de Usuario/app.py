@@ -7,7 +7,6 @@ from config import Config
 from models import db, Usuario
 from routes import auth_bp
 
-
 FRONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "front")
 TEMPLATE_DIR = os.path.join(FRONT_DIR, "templates")
 STATIC_DIR = os.path.join(FRONT_DIR, "static")
