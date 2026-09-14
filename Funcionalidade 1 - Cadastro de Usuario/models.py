@@ -6,7 +6,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
-
 class Usuario(UserMixin, db.Model):
     """Representa qualquer usuário do sistema (admin, professor ou aluno).
 
