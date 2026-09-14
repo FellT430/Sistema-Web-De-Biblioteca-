@@ -7,7 +7,6 @@ class LoginForm(FlaskForm):
     email = StringField("E-mail", validators=[DataRequired(), Email()])
     senha = PasswordField("Senha", validators=[DataRequired()])
 
-
 class CadastroForm(FlaskForm):
     nome = StringField("Nome completo", validators=[DataRequired(), Length(min=3, max=120)])
     email = StringField("E-mail", validators=[DataRequired(), Email()])
