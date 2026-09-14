@@ -14,9 +14,7 @@ def perfil_requerido(*perfis_permitidos):
         @wraps(f)
         def wrapper(*args, **kwargs):
             if not current_user.is_authenticated:
-                # NOTA: no projeto completo, isso aponta para "auth.login"
-                # (pacote "Funcionalidade Cadastro"). Aqui aponta para o
-                # login de teste deste pacote isolado.
+
                 return redirect(url_for("login_teste"))
             if current_user.perfil not in perfis_permitidos:
                 abort(403)
