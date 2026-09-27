@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_campo.html" import campo %}
+
+{% block titulo %}{{ titulo_pagina }} - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm mt-2">
+            <div class="card-body p-4">
+                <h3 class="card-title mb-4">{{ titulo_pagina }}</h3>
+
+                <div class="mb-4 p-3 border rounded bg-light">
+                    <label for="busca-google-books" class="form-label fw-semibold">Buscar na Google Books</label>
+                    <div class="input-group">
+                        <input type="text" id="busca-google-books" class="form-control" placeholder="ISBN ou título do livro">
+                        <button type="button" id="btn-buscar-google-books" class="btn btn-outline-primary">Buscar</button>
+                    </div>
+                    <div class="form-text">
+                        Encontre o livro e clique no resultado para preencher o formulário automaticamente.
+                        Confira os dados antes de salvar.
+                    </div>
+                    <div id="resultados-google-books" class="list-group mt-2"></div>
+                </div>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    {{ form.capa_url() }}
+                    {{ form.google_books_id() }}
+
+                    <img id="capa-preview" src="{{ livro.capa_url if livro and livro.capa_url else '' }}" alt="" class="mb-3 rounded{{ '' if livro and livro.capa_url else ' d-none' }}" style="width: 90px; height: 126px; object-fit: cover;">
+
+                    {{ campo(form.titulo) }}
+
+                    {{ campo(form.autor) }}
+
+                    <div class="row">
+                        {{ campo(form.isbn, classe="col-md-6 mb-3") }}
+                        {{ campo(form.editora, classe="col-md-6 mb-3") }}
+                    </div>
+
+                    <div class="row">
+                        {{ campo(form.ano_publicacao, classe="col-md-6 mb-3") }}
+                        {{ campo(form.quantidade, classe="col-md-6 mb-3") }}
+                    </div>
+
+                    {{ campo(form.categoria) }}
+
+                    {{ campo(form.sinopse, rows="4") }}
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <a href="{{ url_for('livros.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/google_books.js') }}"></script>
+{% endblock %}

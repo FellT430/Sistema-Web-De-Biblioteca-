@@ -1,0 +1,29 @@
+body {
+     background-image: linear-gradient(to bottom,#0F8C7B,#0F8C51
+    );
+    background-repeat: no-repeat;
+     background-attachment: fixed;
+    
+}
+
+.card {
+    
+    border: none;
+    border-radius: 0.75rem;
+}
+
+.navbar-brand {
+    
+    font-weight: 600;
+}
+
+.btn-primary,
+.btn-success {
+    border-radius: 0.5rem;
+}
+
+.qr-2fa svg {
+    width: 220px;
+    height: 220px;
+    display: block;
+}
