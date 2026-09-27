@@ -2,7 +2,6 @@ from datetime import datetime
 
 from models import db
 
-
 class LogAuditoria(db.Model):
     __tablename__ = "logs_auditoria"
 
