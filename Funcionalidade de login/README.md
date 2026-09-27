@@ -42,3 +42,5 @@ Acesse http://127.0.0.1:5000. O banco SQLite (`back/app.db`) é criado automatic
 
 O arquivo `back/.env` tem apenas valores de exemplo. Para usar MySQL ou outra chave secreta, copie os
 valores do `back/.env.example` e preencha com os dados reais.
+
+
