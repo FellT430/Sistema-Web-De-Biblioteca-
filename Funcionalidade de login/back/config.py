@@ -21,3 +21,4 @@ class Config:
         "professor.com": "professor",
         "bibliotecaadm.com": "admin",
     }
+
