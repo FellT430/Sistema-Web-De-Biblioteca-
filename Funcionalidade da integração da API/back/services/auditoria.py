@@ -1,7 +1,6 @@
 import logging
 import os
 from logging.handlers import RotatingFileHandler
-
 from flask import has_request_context, request
 from flask_login import current_user
 
