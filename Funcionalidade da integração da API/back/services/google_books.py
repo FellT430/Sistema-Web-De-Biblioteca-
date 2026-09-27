@@ -5,7 +5,6 @@ from flask import current_app
 class GoogleBooksError(Exception):
     pass
 
-
 def _montar_url_capa(image_links):
     if not image_links:
         return None
