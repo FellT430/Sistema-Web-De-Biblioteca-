@@ -1,6 +1,5 @@
 import io
 import time
-
 import pyotp
 import qrcode
 import qrcode.image.svg
