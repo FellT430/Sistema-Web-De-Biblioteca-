@@ -14,6 +14,7 @@ Navegador (google_books.js) → Servidor Flask (/livros/buscar-google-books) →
 2. O JavaScript chama a rota do servidor, que consulta o Google e devolve até 5 resultados.
 3. Ao clicar em um resultado, o formulário é preenchido. O livro só é gravado ao clicar em **Salvar**.
 
+
 A consulta passa pelo servidor para que a chave da API não fique exposta no navegador, só o admin possa
 buscar e toda busca fique registrada nos logs de auditoria.
 
