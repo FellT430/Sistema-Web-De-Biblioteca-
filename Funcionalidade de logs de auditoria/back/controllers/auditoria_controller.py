@@ -1,7 +1,6 @@
 import csv
 import io
 from datetime import datetime, timedelta
-
 from flask import Blueprint, render_template, request, Response
 from flask_login import login_required
 
