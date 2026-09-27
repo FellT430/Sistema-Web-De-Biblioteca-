@@ -2,7 +2,6 @@ from datetime import datetime
 
 from models import db
 
-
 class Livro(db.Model):
     __tablename__ = "livros"
 
