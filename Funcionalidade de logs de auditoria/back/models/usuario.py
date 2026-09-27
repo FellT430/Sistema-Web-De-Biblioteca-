@@ -5,7 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db
 
-
 class Usuario(UserMixin, db.Model):
     __tablename__ = "usuarios"
 
