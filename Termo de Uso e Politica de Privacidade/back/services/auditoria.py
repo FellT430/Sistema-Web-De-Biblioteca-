@@ -106,3 +106,5 @@ def registrar(acao, descricao="", usuario=None, email=None, sucesso=True):
     except Exception as erro:
         db.session.rollback()
         _arquivo_logger.error("ERRO ao gravar auditoria no banco: %s", erro)
+
+
