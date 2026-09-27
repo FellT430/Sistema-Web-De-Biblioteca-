@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required
-
 from models import db, Livro
 from forms import LivroForm
 from decorators import perfil_requerido
