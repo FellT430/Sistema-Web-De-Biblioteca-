@@ -1,6 +1,5 @@
 (function () {
     "use strict";
-
     const input = document.getElementById("busca-google-books");
     const botaoBuscar = document.getElementById("btn-buscar-google-books");
     const containerResultados = document.getElementById("resultados-google-books");
