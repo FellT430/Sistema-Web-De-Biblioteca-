@@ -12,7 +12,6 @@ from services import dois_fatores
 
 auth_bp = Blueprint("auth", __name__)
 
-
 def detectar_perfil_pelo_email(email: str):
     dominio = email.split("@")[-1].lower().strip()
     return current_app.config["DOMINIOS_PERFIL"].get(dominio)
