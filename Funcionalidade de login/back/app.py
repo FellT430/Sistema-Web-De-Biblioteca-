@@ -57,5 +57,6 @@ def load_user(user_id):
 
 app = create_app()
 
+
 if __name__ == "__main__":
     app.run(debug=True)
