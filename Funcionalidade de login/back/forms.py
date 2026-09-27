@@ -36,3 +36,4 @@ class CadastroForm(FlaskForm):
         validators=[DataRequired(message="Você precisa aceitar a Política de Privacidade e os Termos de Aceite para se cadastrar.")],
     )
 
+
