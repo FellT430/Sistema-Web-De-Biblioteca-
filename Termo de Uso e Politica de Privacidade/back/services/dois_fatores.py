@@ -77,3 +77,5 @@ def verificar_codigo(segredo: str, codigo: str, ultimo_passo=None):
         if totp.verify(codigo, for_time=passo * INTERVALO_SEGUNDOS):
             return passo
     return None
+
+
