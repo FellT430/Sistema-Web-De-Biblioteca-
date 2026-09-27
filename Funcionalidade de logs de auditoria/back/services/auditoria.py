@@ -8,7 +8,6 @@ from flask_login import current_user
 from models import db
 from models.log_auditoria import LogAuditoria
 
-
 class Acoes:
     LOGIN_SUCESSO = "LOGIN_SUCESSO"
     LOGIN_FALHA = "LOGIN_FALHA"
