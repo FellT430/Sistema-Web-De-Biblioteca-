@@ -3,7 +3,6 @@ import os
 from flask import Flask
 from flask_login import LoginManager
 from sqlalchemy import inspect, text
-
 from config import Config
 from models import db, Usuario
 from controllers.auth_controller import auth_bp
