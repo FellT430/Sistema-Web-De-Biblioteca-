@@ -8,7 +8,6 @@
     if (!input || !botaoBuscar || !containerResultados) {
         return;
     }
-
     const REGEX_ISBN = /^(?:\d{9}[\dXx]|\d{13})$/;
 
     function limparResultados() {
