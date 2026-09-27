@@ -24,3 +24,5 @@ class LogAuditoria(db.Model):
 
     def __repr__(self):
         return f"<LogAuditoria {self.acao} por {self.usuario_email} em {self.criado_em}>"
+
+
