@@ -278,3 +278,4 @@ def resetar_2fa(usuario_id):
         "success",
     )
     return redirect(url_for("auth.area_admin"))
+
