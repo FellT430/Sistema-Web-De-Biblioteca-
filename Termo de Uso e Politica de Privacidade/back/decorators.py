@@ -25,3 +25,4 @@ def perfil_requerido(*perfis_permitidos):
         return wrapper
 
     return decorator
+
