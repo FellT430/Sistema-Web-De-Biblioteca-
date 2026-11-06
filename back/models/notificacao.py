@@ -4,19 +4,13 @@ from models import db
 
 
 class TipoNotificacao:
-    """Tipos de notificação (enum TipoNotificacao do diagrama de classes)."""
 
-    PRAZO_PROXIMO = "PRAZO_PROXIMO"              # devolução vence hoje ou amanhã (RF15, CA02)
-    ATRASO = "ATRASO"                            # empréstimo passou do prazo (RF15, CA01)
-    DEVOLUCAO_REGISTRADA = "DEVOLUCAO_REGISTRADA"  # bibliotecário registrou a devolução
+    PRAZO_PROXIMO = "PRAZO_PROXIMO"
+    ATRASO = "ATRASO"
+    DEVOLUCAO_REGISTRADA = "DEVOLUCAO_REGISTRADA"
 
 
 class Notificacao(db.Model):
-    """Aviso exibido ao aluno dentro do sistema (sininho na barra superior).
-
-    `data_referencia` é o dia a que o aviso se refere; junto com o empréstimo
-    e o tipo, impede notificações duplicadas no mesmo dia (RN50).
-    """
 
     __tablename__ = "notificacoes"
     __table_args__ = (

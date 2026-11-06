@@ -1,8 +1,8 @@
-import os
+import os, time
+os.environ["TZ"] = "America/Sao_Paulo"
+time.tzset()
 from datetime import datetime
 
-# Impede o create_app() de ligar o agendador "de dentro" do app,
-# senão a verificação rodaria duas vezes.
 os.environ["DESATIVAR_AGENDADOR"] = "1"
 
 from dotenv import load_dotenv
@@ -22,7 +22,7 @@ agendador.add_job(
     hours=INTERVALO_HORAS,
     args=[app],
     id="verificar_atrasos",
-    next_run_time=datetime.now(),  # roda já ao iniciar
+    next_run_time=datetime.now(),
 )
 
 print(f"Agendador iniciado: verificação a cada {INTERVALO_HORAS} hora(s).", flush=True)

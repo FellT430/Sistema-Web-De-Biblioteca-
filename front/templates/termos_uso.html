@@ -17,10 +17,11 @@
 
                 <h5 class="mt-4">1. Cadastro</h5>
                 <p>
-                    O cadastro deve ser feito com um e-mail institucional válido (@aluno.com,
-                    @professor.com ou @bibliotecaadm.com). O perfil de acesso é definido
-                    automaticamente a partir do domínio informado e não pode ser alterado pelo
-                    próprio usuário.
+                    O cadastro só pode ser feito com um e-mail institucional previamente liberado
+                    pela administração da biblioteca (@aluno.com, @professor.com ou
+                    @bibliotecaadm.com). O próprio usuário cria a sua senha, e o perfil de acesso
+                    é definido automaticamente a partir do domínio informado, não podendo ser
+                    alterado pelo usuário.
                 </p>
 
                 <h5 class="mt-4">2. Uso da conta</h5>
@@ -49,12 +50,10 @@
                     O tratamento dos seus dados pessoais segue o descrito na nossa
                     <a href="{{ url_for('auth.politica_privacidade') }}">Política de Privacidade</a>.
                 </p>
-
-                <p class="text-muted fst-italic mt-4">
-                    Documento de caráter educacional/exemplo para fins deste projeto acadêmico.
-                    Em um ambiente de produção, este conteúdo deve ser revisado por um profissional
-                    jurídico.
-                </p>
+                <div class="mt-4">
+                    <a href="{{ url_for('auth.dashboard') if current_user.is_authenticated else url_for('auth.login') }}"
+                       class="btn btn-outline-secondary" onclick="if (history.length > 1) { history.back(); return false; }">&larr; Voltar</a>
+                </div>
             </div>
         </div>
     </div>

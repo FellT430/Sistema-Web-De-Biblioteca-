@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import texto_longo %}
 
 {% block titulo %}{{ livro.titulo }} - Livro +{% endblock %}
 
@@ -93,7 +94,7 @@
                 <div class="fw-semibold">{{ recomendacao.disciplina.nome }}</div>
                 <div class="small text-muted">Prof. {{ recomendacao.disciplina.professor.nome }} · {{ recomendacao.criado_em.strftime("%d/%m/%Y") }}</div>
                 {% if recomendacao.mensagem %}
-                    <div class="mt-1">"{{ recomendacao.mensagem }}"</div>
+                    <div class="mt-1">"{{ texto_longo(recomendacao.mensagem) }}"</div>
                 {% endif %}
             </div>
             {% endfor %}

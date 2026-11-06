@@ -13,7 +13,7 @@
                 <p>
                     Esta Política de Privacidade descreve como o sistema <strong>Livro +</strong>
                     coleta, usa, armazena e protege os dados pessoais dos seus usuários (alunos,
-                    professores e administradores), em conformidade com a Lei Geral de Proteção
+                    professores, bibliotecários e administradores), em conformidade com a Lei Geral de Proteção
                     de Dados (Lei nº 13.709/2018 - LGPD).
                 </p>
 
@@ -23,8 +23,12 @@
                     <li>Nome completo;</li>
                     <li>E-mail institucional;</li>
                     <li>Senha (armazenada de forma criptografada, nunca em texto puro);</li>
-                    <li>Perfil de acesso (aluno, professor ou administrador);</li>
-                    <li>Data de cadastro e registro de aceite dos Termos de Aceite.</li>
+                    <li>Perfil de acesso (aluno, professor, bibliotecário ou administrador);</li>
+                    <li>Data de cadastro e registro de aceite dos Termos de Aceite;</li>
+                    <li>Registros de acesso e de uso (data e hora, endereço IP, navegador utilizado e
+                        ações realizadas), mantidos para a segurança e a auditoria do sistema, conforme o
+                        Marco Civil da Internet (Lei nº 12.965/2014, art. 15);</li>
+                    <li>Histórico de empréstimos e recomendações, necessário para o funcionamento da biblioteca.</li>
                 </ul>
 
                 <h5 class="mt-4">2. Como usamos seus dados</h5>
@@ -47,21 +51,21 @@
 
                 <h5 class="mt-4">4. Segurança</h5>
                 <p>
-                    Adotamos medidas técnicas para proteger seus dados, como criptografia de
-                    senhas e controle de acesso baseado em perfil (RBAC).
+                    Adotamos medidas técnicas para proteger seus dados, como armazenamento das
+                    senhas em hash, verificação em duas etapas, conexão segura (HTTPS),
+                    controle de acesso baseado em perfil (RBAC) e registro de auditoria.
                 </p>
 
                 <h5 class="mt-4">5. Contato</h5>
                 <p>
-                    Dúvidas sobre esta política podem ser encaminhadas ao administrador do
-                    sistema.
+                    Dúvidas, solicitações sobre seus dados pessoais ou o exercício dos direitos
+                    descritos acima podem ser encaminhados à administração do sistema pelo e-mail
+                    <a href="mailto:{{ contato_email }}">{{ contato_email }}</a>.
                 </p>
-
-                <p class="text-muted fst-italic mt-4">
-                    Documento de caráter educacional/exemplo para fins deste projeto acadêmico.
-                    Em um ambiente de produção, este conteúdo deve ser revisado por um profissional
-                    jurídico.
-                </p>
+                <div class="mt-4">
+                    <a href="{{ url_for('auth.dashboard') if current_user.is_authenticated else url_for('auth.login') }}"
+                       class="btn btn-outline-secondary" onclick="if (history.length > 1) { history.back(); return false; }">&larr; Voltar</a>
+                </div>
             </div>
         </div>
     </div>

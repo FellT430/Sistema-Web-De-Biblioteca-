@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block titulo %}Liberar cadastro - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="text-dark mb-0">Liberar cadastro</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.usuarios') }}" class="btn btn-light">Usuários</a>
+        <a href="{{ url_for('admin.painel') }}" class="btn btn-light">Voltar ao painel</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-body p-4">
+                <h5 class="mb-2">Liberar um e-mail</h5>
+                <p class="text-muted small mb-3">
+                    Só consegue se cadastrar quem estiver nesta lista. Depois de liberado, a própria pessoa
+                    acessa a tela de cadastro, cria a senha dela e aceita os termos. O perfil é definido
+                    pelo domínio: <strong>@aluno.com</strong> (Aluno), <strong>@professor.com</strong> (Professor)
+                    ou <strong>@bibliotecaadm.com</strong> (Bibliotecário).
+                </p>
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                        {% for erro in form.email.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Liberar cadastro</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h5 class="mb-3">Aguardando cadastro ({{ pendentes | length }})</h5>
+                <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>E-mail</th><th>Perfil</th><th>Liberado em</th><th class="text-end"></th></tr></thead>
+                    <tbody>
+                    {% for a in pendentes %}
+                    <tr>
+                        <td class="text-break">{{ a.email }}</td>
+                        <td><span class="badge bg-secondary">{{ a.perfil | nome_perfil }}</span></td>
+                        <td class="small text-nowrap">{{ a.criado_em.strftime("%d/%m/%Y %H:%M") }}</td>
+                        <td class="text-end">
+                            <form method="POST" action="{{ url_for('admin.revogar_autorizacao', autorizacao_id=a.id) }}"
+                                  onsubmit="return confirm('Cancelar a liberação de {{ a.email }}?');">
+                                {{ form_acao.hidden_tag() }}
+                                <button class="btn btn-sm btn-outline-danger">Cancelar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-muted">Nenhuma liberação pendente.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="mb-3">Cadastros concluídos (últimos 20)</h5>
+                <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>E-mail</th><th>Perfil</th><th>Cadastrado em</th></tr></thead>
+                    <tbody>
+                    {% for a in usadas %}
+                    <tr>
+                        <td class="text-break">{{ a.email }}</td>
+                        <td><span class="badge bg-secondary">{{ a.perfil | nome_perfil }}</span></td>
+                        <td class="small text-nowrap">{{ a.usado_em.strftime("%d/%m/%Y %H:%M") }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-muted">Nenhum cadastro concluído ainda.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

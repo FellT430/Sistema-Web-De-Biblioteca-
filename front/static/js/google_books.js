@@ -10,7 +10,6 @@
         return;
     }
 
-    // ISBN-10 ou ISBN-13, com ou sem hífens/espaços.
     const REGEX_ISBN = /^(?:\d{9}[\dXx]|\d{13})$/;
 
     function limparResultados() {

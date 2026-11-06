@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask
+from flask import Flask, render_template
 from flask_login import LoginManager
 from sqlalchemy import inspect, text
 
@@ -14,9 +14,10 @@ from controllers.recomendacoes_controller import recomendacoes_bp
 from controllers.acervo_controller import acervo_bp
 from controllers.emprestimos_controller import emprestimos_bp
 from controllers.notificacoes_controller import notificacoes_bp
+from controllers.admin_controller import admin_bp
 from services.agendador import iniciar_agendador
+from services.superadmin import garantir_superadmins
 
-# Caminhos para as pastas de front-end (templates e static ficam separados do back-end)
 FRONT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "front")
 TEMPLATE_DIR = os.path.join(FRONT_DIR, "templates")
 STATIC_DIR = os.path.join(FRONT_DIR, "static")
@@ -45,10 +46,14 @@ def create_app():
     app.register_blueprint(acervo_bp)
     app.register_blueprint(emprestimos_bp)
     app.register_blueprint(notificacoes_bp)
+    app.register_blueprint(admin_bp)
+
+    @app.template_filter("nome_perfil")
+    def nome_perfil(perfil):
+        return Usuario.NOMES_PERFIL.get(perfil, perfil or "")
 
     @app.context_processor
     def contador_notificacoes():
-        """Deixa o número de notificações não lidas disponível em todos os templates (sininho)."""
         from flask_login import current_user
         from services.notificacoes import nao_lidas
 
@@ -56,23 +61,38 @@ def create_app():
             return {"notificacoes_nao_lidas": nao_lidas(current_user)}
         return {"notificacoes_nao_lidas": 0}
 
+    @app.errorhandler(403)
+    def acesso_negado(_erro):
+        return render_template("erro.html", codigo=403, titulo="Acesso negado",
+                               mensagem="Você não tem permissão para acessar esta página."), 403
+
+    @app.errorhandler(404)
+    def nao_encontrada(_erro):
+        return render_template("erro.html", codigo=404, titulo="Página não encontrada",
+                               mensagem="O endereço acessado não existe ou foi removido."), 404
+
+    @app.errorhandler(400)
+    def requisicao_invalida(_erro):
+        return render_template("erro.html", codigo=400, titulo="Requisição inválida",
+                               mensagem="A página expirou ou o formulário é inválido. Volte e tente novamente."), 400
+
+    @app.errorhandler(500)
+    def erro_interno(_erro):
+        db.session.rollback()
+        return render_template("erro.html", codigo=500, titulo="Erro interno",
+                               mensagem="Ocorreu um erro inesperado. Tente novamente em instantes."), 500
+
     with app.app_context():
         db.create_all()
         _adicionar_colunas_2fa()
+        garantir_superadmins(app)
 
-    # RF15: verificação automática de atrasos e notificações (APScheduler)
     iniciar_agendador(app)
 
     return app
 
 
 def _adicionar_colunas_2fa():
-    """Adiciona as colunas do 2FA em bancos criados antes dessa funcionalidade.
-
-    `db.create_all()` só cria tabelas novas; ele não altera tabelas que já
-    existem. Sem isso, um banco antigo daria erro "Unknown column". O mesmo
-    SQL está em db/migracao_2fa.sql para quem preferir rodar manualmente.
-    """
     colunas_existentes = {c["name"] for c in inspect(db.engine).get_columns("usuarios")}
     novas_colunas = {
         "dois_fatores_ativo": "BOOLEAN NOT NULL DEFAULT 0",
@@ -87,7 +107,10 @@ def _adicionar_colunas_2fa():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(Usuario, int(user_id))
+    usuario = db.session.get(Usuario, int(user_id))
+    if usuario is None or not usuario.ativo:
+        return None
+    return usuario
 
 
 app = create_app()

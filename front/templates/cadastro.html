@@ -24,7 +24,8 @@
                         {{ form.email.label(class="form-label") }}
                         {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="nome@aluno.com") }}
                         <div class="form-text">
-                            Seu perfil é detectado automaticamente pelo domínio do e-mail
+                            Use o e-mail institucional liberado pela administração da biblioteca.
+                            Seu perfil é detectado automaticamente pelo domínio
                             (@aluno.com, @professor.com ou @bibliotecaadm.com).
                         </div>
                         {% for erro in form.email.errors %}

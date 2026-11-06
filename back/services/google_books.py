@@ -1,23 +1,15 @@
-"""Integração com a Google Books API (https://developers.google.com/books).
-
-A chamada HTTP e o parsing da resposta ficam isolados aqui, fora do
-controller: a rota em `controllers/livros_controller.py` apenas repassa
-a busca e devolve JSON, sem conhecer detalhes do formato da API externa.
-"""
 import requests
 from flask import current_app
 
 
 class GoogleBooksError(Exception):
-    """Falha ao consultar a Google Books API (rede, timeout ou resposta inválida)."""
+    pass
 
 
 def _montar_url_capa(image_links):
     if not image_links:
         return None
     url = image_links.get("thumbnail") or image_links.get("smallThumbnail")
-    # A API às vezes retorna a capa em http://: forçamos https para evitar
-    # conteúdo misto (mixed content) ao exibir a imagem em uma página https.
     return url.replace("http://", "https://") if url else None
 
 
@@ -26,6 +18,72 @@ def _extrair_isbn(identificadores):
         return None
     por_tipo = {item.get("type"): item.get("identifier") for item in identificadores}
     return por_tipo.get("ISBN_13") or por_tipo.get("ISBN_10")
+
+
+CATEGORIAS_PT = {
+    "antiques & collectibles": "Antiguidades e colecionáveis",
+    "architecture": "Arquitetura",
+    "art": "Arte",
+    "bibles": "Bíblias",
+    "biography & autobiography": "Biografia e autobiografia",
+    "body, mind & spirit": "Corpo, mente e espírito",
+    "business & economics": "Negócios e economia",
+    "comics & graphic novels": "Quadrinhos e graphic novels",
+    "computers": "Computação",
+    "cooking": "Culinária",
+    "crafts & hobbies": "Artesanato e hobbies",
+    "design": "Design",
+    "drama": "Teatro",
+    "education": "Educação",
+    "family & relationships": "Família e relacionamentos",
+    "fiction": "Ficção",
+    "foreign language study": "Estudo de idiomas",
+    "games & activities": "Jogos e atividades",
+    "gardening": "Jardinagem",
+    "health & fitness": "Saúde e bem-estar",
+    "history": "História",
+    "house & home": "Casa",
+    "humor": "Humor",
+    "juvenile fiction": "Ficção infantojuvenil",
+    "juvenile nonfiction": "Não ficção infantojuvenil",
+    "language arts & disciplines": "Linguagem e letras",
+    "law": "Direito",
+    "literary collections": "Coletâneas literárias",
+    "literary criticism": "Crítica literária",
+    "mathematics": "Matemática",
+    "medical": "Medicina",
+    "music": "Música",
+    "nature": "Natureza",
+    "performing arts": "Artes cênicas",
+    "pets": "Animais de estimação",
+    "philosophy": "Filosofia",
+    "photography": "Fotografia",
+    "poetry": "Poesia",
+    "political science": "Ciência política",
+    "psychology": "Psicologia",
+    "reference": "Referência",
+    "religion": "Religião",
+    "science": "Ciências",
+    "self-help": "Autoajuda",
+    "social science": "Ciências sociais",
+    "sports & recreation": "Esportes e lazer",
+    "study aids": "Material de estudo",
+    "technology & engineering": "Tecnologia e engenharia",
+    "transportation": "Transportes",
+    "travel": "Viagens",
+    "true crime": "Crimes reais",
+    "young adult fiction": "Ficção jovem adulta",
+    "young adult nonfiction": "Não ficção jovem adulta",
+}
+
+
+def traduzir_categorias(categorias) -> str:
+    traduzidas = []
+    for categoria in categorias or []:
+        principal, _, resto = categoria.partition(" / ")
+        nome = CATEGORIAS_PT.get(principal.strip().lower(), principal.strip())
+        traduzidas.append(f"{nome} / {resto}" if resto else nome)
+    return ", ".join(traduzidas)
 
 
 def _normalizar_volume(volume):
@@ -41,18 +99,12 @@ def _normalizar_volume(volume):
         "ano_publicacao": ano_publicacao,
         "isbn": _extrair_isbn(info.get("industryIdentifiers")),
         "sinopse": info.get("description", ""),
-        "categoria": ", ".join(info.get("categories", [])),
+        "categoria": traduzir_categorias(info.get("categories")),
         "capa_url": _montar_url_capa(info.get("imageLinks")),
     }
 
 
 def buscar_livros(termo: str, por_isbn: bool = False, max_resultados: int = 5) -> list:
-    """Busca livros na Google Books API por ISBN ou por texto livre (título/autor).
-
-    Retorna uma lista de dicts já normalizados para os campos usados no
-    formulário de cadastro. Lança GoogleBooksError em falha de rede, timeout
-    ou status de erro HTTP — o chamador decide como comunicar isso ao usuário.
-    """
     termo = (termo or "").strip()
     if not termo:
         return []

@@ -25,7 +25,7 @@
                         </tr>
                         <tr>
                             <th scope="row" class="text-muted">Perfil</th>
-                            <td><span class="badge bg-primary text-uppercase">{{ usuario.perfil }}</span></td>
+                            <td><span class="badge bg-primary text-uppercase">{{ usuario.perfil_nome }}</span></td>
                         </tr>
                         <tr>
                             <th scope="row" class="text-muted">Cadastrado em</th>
@@ -68,7 +68,37 @@
                     </tbody>
                 </table>
 
+                {% if usuario.dois_fatores_ativo %}
+                <div class="border rounded p-3 mb-4">
+                    <h5 class="mb-1">Códigos de recuperação</h5>
+                    {% if codigos_total %}
+                        <p class="text-muted small mb-2">
+                            Você possui <strong>{{ codigos_restantes }} de {{ codigos_total }} códigos</strong> disponíveis.
+                            Por segurança, os códigos não são exibidos novamente.
+                        </p>
+                        <div class="progress mb-3" style="height: 8px;">
+                            <div class="progress-bar {{ 'bg-success' if codigos_restantes > 2 else 'bg-danger' }}"
+                                 style="width: {{ (100 * codigos_restantes / codigos_total) | round }}%"></div>
+                        </div>
+                    {% else %}
+                        <p class="text-muted small mb-2">
+                            Você ainda não possui códigos de recuperação. Gere agora para conseguir entrar
+                            caso perca o celular.
+                        </p>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('auth.gerar_codigos_recuperacao') }}"
+                          {% if codigos_total %}onsubmit="return confirm('Gerar novos códigos? Os códigos anteriores deixarão de funcionar.');"{% endif %}>
+                        {{ form_acao.hidden_tag() }}
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                            {{ 'Gerar novos códigos' if codigos_total else 'Gerar códigos de recuperação' }}
+                        </button>
+                    </form>
+                    {% if codigos_total %}<div class="form-text">Ao gerar novos códigos, os anteriores deixam de funcionar.</div>{% endif %}
+                </div>
+                {% endif %}
+
                 <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('auth.dashboard') }}" class="btn btn-secondary btn-sm">&larr; Voltar</a>
                     <a href="{{ url_for('auth.politica_privacidade') }}" class="btn btn-outline-secondary btn-sm">Ver Política de Privacidade</a>
                     <a href="{{ url_for('auth.termos_uso') }}" class="btn btn-outline-secondary btn-sm">Ver Termos de Aceite</a>
                 </div>

@@ -1,13 +1,3 @@
-"""Agendador de tarefas automáticas (APScheduler) — RF15 / RN49.
-
-Roda a verificação de atrasos e notificações em segundo plano, junto com o
-Flask, sem ninguém precisar abrir uma tela:
-  - uma vez logo que o sistema inicia;
-  - e depois a cada INTERVALO_HORAS horas.
-
-Rodar várias vezes no mesmo dia não duplica avisos, porque a verificação
-respeita a RN50 (um aviso por empréstimo, por tipo, por dia).
-"""
 import logging
 import os
 from datetime import datetime
@@ -21,8 +11,7 @@ _agendador = None
 
 
 def executar_verificacao(app) -> dict:
-    """Executa a verificação dentro do contexto da aplicação e registra na auditoria."""
-    from services.notificacoes import verificar_e_notificar  # import local evita import circular
+    from services.notificacoes import verificar_e_notificar
 
     with app.app_context():
         resumo = verificar_e_notificar()
@@ -37,16 +26,13 @@ def executar_verificacao(app) -> dict:
 
 
 def iniciar_agendador(app) -> None:
-    """Liga o APScheduler. Chamado uma vez em create_app()."""
     global _agendador
 
     if os.getenv("DESATIVAR_AGENDADOR") == "1":
       return
-  
+
     if app.config.get("TESTING") or _agendador is not None:
         return
-    # Com debug=True o Flask roda o app duas vezes (o "reloader"); só o processo
-    # filho (WERKZEUG_RUN_MAIN=true) liga o agendador, senão a tarefa rodaria em dobro.
     if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
         return
 
@@ -63,7 +49,7 @@ def iniciar_agendador(app) -> None:
         hours=INTERVALO_HORAS,
         args=[app],
         id="verificar_atrasos",
-        next_run_time=datetime.now(),  # roda já na inicialização
+        next_run_time=datetime.now(),
         replace_existing=True,
     )
     _agendador.start()

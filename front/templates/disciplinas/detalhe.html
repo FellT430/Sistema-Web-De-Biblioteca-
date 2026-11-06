@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import texto_longo %}
 
 {% block titulo %}{{ disciplina.nome }} - Livro +{% endblock %}
 
@@ -14,9 +15,6 @@
     </div>
 </div>
 
-{# ------------------------------------------------------------------ #}
-{# Livros relacionados à disciplina (RF10) e recomendações (RF11)       #}
-{# ------------------------------------------------------------------ #}
 <div class="card shadow-sm mb-4">
     <div class="card-body p-4">
         <h5 class="mb-3">Livros da disciplina</h5>
@@ -52,7 +50,7 @@
                         {% if recomendacao and recomendacao.ativa %}
                             <span class="badge bg-success">Recomendado</span>
                             {% if recomendacao.mensagem %}
-                                <div class="small text-muted mt-1">"{{ recomendacao.mensagem }}"</div>
+                                <div class="small text-muted mt-1">"{{ texto_longo(recomendacao.mensagem) }}"</div>
                             {% endif %}
                         {% else %}
                             <span class="badge bg-secondary">Não recomendado</span>
@@ -84,9 +82,6 @@
     </div>
 </div>
 
-{# ------------------------------------------------------------------ #}
-{# Busca no acervo para relacionar livros (RF10, passos 3 e 4)          #}
-{# ------------------------------------------------------------------ #}
 <div class="card shadow-sm">
     <div class="card-body p-4">
         <h5 class="mb-3">Adicionar livros do acervo</h5>

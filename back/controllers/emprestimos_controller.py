@@ -1,19 +1,3 @@
-"""Controller de empréstimos (RF13) e devoluções (RF14).
-
-As regras de negócio ficam em services/emprestimos.py; aqui só tratamos as
-requisições, registramos a auditoria e escolhemos a tela.
-
-Aluno:
-  - solicitar()            pede um livro disponível (a partir da tela do acervo)
-  - meus()                 acompanha solicitações, empréstimos e prazos
-  - cancelar()             desiste de uma solicitação ainda não retirada
-
-Bibliotecário (perfil admin):
-  - gerenciar()            lista e pesquisa empréstimos por aluno ou livro
-  - confirmar()            confirma a retirada no balcão  -> ATIVO
-  - recusar()              recusa uma solicitação         -> CANCELADO
-  - devolver()             registra a devolução           -> DEVOLVIDO
-"""
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 from sqlalchemy import or_
@@ -41,9 +25,6 @@ def _descricao(emprestimo):
     )
 
 
-# ---------------------------------------------------------------------------
-# Aluno
-# ---------------------------------------------------------------------------
 @emprestimos_bp.route("/solicitar/<int:livro_id>", methods=["POST"])
 @login_required
 @perfil_requerido("aluno")
@@ -54,7 +35,6 @@ def solicitar(livro_id):
     try:
         emprestimo = servico.solicitar(current_user, livro)
     except RegraEmprestimoError as erro:
-        # CA02 / CA03: recusa informando o motivo, e fica registrado
         registrar(
             Acoes.EMPRESTIMO_RECUSADO_REGRA,
             f"Solicitação do livro #{livro.id} '{livro.titulo}' recusada: {erro}",
@@ -76,7 +56,7 @@ def solicitar(livro_id):
 @login_required
 @perfil_requerido("aluno")
 def meus():
-    verificar_e_notificar()  # atualiza atrasos e já gera os avisos (RF15)
+    verificar_e_notificar()
     emprestimos = (
         Emprestimo.query.filter_by(aluno_id=current_user.id)
         .order_by(Emprestimo.data_solicitacao.desc())
@@ -120,9 +100,6 @@ def cancelar(emprestimo_id):
     return redirect(url_for("emprestimos.meus"))
 
 
-# ---------------------------------------------------------------------------
-# Bibliotecário
-# ---------------------------------------------------------------------------
 FILTROS = {
     "pendentes": ("Aguardando retirada", [StatusEmprestimo.SOLICITADO]),
     "andamento": ("Com o aluno", [StatusEmprestimo.ATIVO, StatusEmprestimo.ATRASADO]),
@@ -135,7 +112,7 @@ FILTROS = {
 @login_required
 @perfil_requerido("admin")
 def gerenciar():
-    verificar_e_notificar()  # atualiza atrasos e já gera os avisos (RF15)
+    verificar_e_notificar()
 
     filtro = request.args.get("filtro", "pendentes")
     if filtro not in FILTROS:
@@ -153,7 +130,6 @@ def gerenciar():
         .filter(Emprestimo.status.in_(FILTROS[filtro][1]))
     )
     if termo:
-        # RF14, passo 1: pesquisar pelo aluno ou pelo livro
         padrao = f"%{termo}%"
         consulta = consulta.filter(
             or_(
@@ -184,7 +160,6 @@ def gerenciar():
 
 
 def _acao_bibliotecario(emprestimo_id, funcao, acao_auditoria, texto_auditoria, mensagem, depois=None):
-    """Executa confirmar/recusar/devolver com o mesmo tratamento de erro e auditoria."""
     _conferir_csrf()
     emprestimo = db.get_or_404(Emprestimo, emprestimo_id)
     voltar = url_for(
@@ -249,5 +224,5 @@ def devolver(emprestimo_id):
             f"Devolução de \"{e.livro.titulo}\" registrada"
             + (f" com {e.dias_atraso()} dia(s) de atraso." if e.devolvido_com_atraso else " dentro do prazo.")
         ),
-        depois=notificar_devolucao,  # RF15: avisa o aluno que a devolução foi registrada
+        depois=notificar_devolucao,
     )

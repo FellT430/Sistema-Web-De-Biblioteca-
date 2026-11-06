@@ -93,3 +93,27 @@ E no `requirements.txt`, descomente `PyMySQL`.
 - Adicionar recuperação de senha
 - Adicionar 2FA (pyotp), como planejado no projeto
 - Criar seed de um usuário admin inicial via comando CLI do Flask
+
+## Perfis e Administrador do sistema
+
+| Perfil | Como a conta é criada | O que faz |
+|---|---|---|
+| Aluno | Cadastro com `@aluno.com`, depois de liberado pelo Administrador | Consulta o acervo, vê recomendações, solicita empréstimos |
+| Professor | Cadastro com `@professor.com`, depois de liberado pelo Administrador | Disciplinas e recomendações |
+| Bibliotecário | Cadastro com `@bibliotecaadm.com`, depois de liberado pelo Administrador | Acervo, empréstimos, devoluções, painel da biblioteca |
+| Administrador | Conta fixa, criada ao iniciar o sistema | Usuários (liberar cadastros, ativar/desativar, redefinir 2FA/senha), auditoria |
+
+As contas de Administrador estão em `config.py` (`SUPERADMINS`). A senha de cada uma
+vem do `.env` (`SUPERADMIN_BRUNO_SENHA`, `SUPERADMIN_FELIPE_SENHA`). Contas de
+Administrador não podem ser desativadas e nenhuma conta é excluída (só desativada).
+
+**Liberação de cadastro (lista de convidados):** ninguém se cadastra sozinho. O
+Administrador libera o e-mail em *Painel → Liberar cadastro*; depois disso a pessoa
+faz o cadastro normalmente, criando a própria senha e aceitando os termos. O
+Administrador nunca define nem conhece a senha de ninguém.
+
+## Códigos de recuperação do 2FA
+
+Ao configurar o Google Authenticator, o usuário recebe 8 códigos de uso único para
+entrar caso perca o celular (link "Use um código de recuperação" na tela do código).
+Novos códigos podem ser gerados em **Meus dados**. No banco, ficam só como hash.

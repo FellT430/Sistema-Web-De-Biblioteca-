@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block titulo %}Códigos de recuperação - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm mt-2">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-2">Seus códigos de recuperação</h3>
+                <p class="text-muted text-center mb-3">
+                    Use um destes códigos para entrar caso perca o celular ou não consiga usar o
+                    Google Authenticator. <strong>Cada código funciona uma única vez.</strong>
+                </p>
+                <div class="alert alert-warning small mb-3">
+                    <strong>Atenção:</strong> estes códigos são exibidos <strong>somente agora</strong>.
+                    Guarde-os em local seguro (anote em papel ou salve em um gerenciador de senhas).
+                </div>
+
+                <div class="row g-2 mb-3" id="lista-codigos">
+                    {% for codigo in codigos %}
+                    <div class="col-6"><div class="codigo-rec">{{ codigo }}</div></div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-secondary w-50" id="btn-copiar">Copiar códigos</button>
+                    <button type="button" class="btn btn-outline-secondary w-50" id="btn-baixar">Baixar (.txt)</button>
+                </div>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="form-check mb-3">
+                        {{ form.guardei(class="form-check-input" + (" is-invalid" if form.guardei.errors else "")) }}
+                        {{ form.guardei.label(class="form-check-label") }}
+                        {% for erro in form.guardei.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Continuar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var codigos = {{ codigos | tojson }};
+        var texto = "Livro + - códigos de recuperação ({{ current_user.email }})\n"
+            + "Cada código pode ser usado uma única vez.\n\n" + codigos.join("\n") + "\n";
+        document.getElementById("btn-copiar").addEventListener("click", function () {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(codigos.join("\n"));
+                this.textContent = "Copiado!";
+            }
+        });
+        document.getElementById("btn-baixar").addEventListener("click", function () {
+            var link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob([texto], { type: "text/plain" }));
+            link.download = "livromais-codigos-recuperacao.txt";
+            link.click();
+        });
+    })();
+</script>
+{% endblock %}

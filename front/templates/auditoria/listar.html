@@ -75,7 +75,7 @@
                         <td>
                             {{ log.usuario_email or "anônimo" }}
                             {% if log.usuario_perfil %}
-                            <span class="badge bg-secondary text-uppercase">{{ log.usuario_perfil }}</span>
+                            <span class="badge bg-secondary text-uppercase">{{ log.usuario_perfil | nome_perfil }}</span>
                             {% endif %}
                         </td>
                         <td><code>{{ log.acao }}</code></td>

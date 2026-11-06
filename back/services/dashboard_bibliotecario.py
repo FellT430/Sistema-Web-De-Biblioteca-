@@ -1,9 +1,3 @@
-"""Dados do painel do bibliotecário (perfil admin).
-
-Todas as consultas ficam aqui, na camada de serviços, e o controller só
-repassa o resultado para o template. Os agrupamentos por mês são feitos em
-Python para funcionar igual no SQLite e no MySQL.
-"""
 from datetime import date
 
 from sqlalchemy import func
@@ -23,7 +17,6 @@ def _contar_por_status(status) -> int:
 
 
 def _livros_mais_emprestados(limite=TOP_LIVROS):
-    """Livros com mais empréstimos efetivados (solicitações canceladas não contam)."""
     linhas = (
         db.session.query(Livro.titulo, func.count(Emprestimo.id).label("total"))
         .join(Emprestimo, Emprestimo.livro_id == Livro.id)
@@ -37,7 +30,6 @@ def _livros_mais_emprestados(limite=TOP_LIVROS):
 
 
 def _ultimos_meses(quantidade, hoje):
-    """Lista de (ano, mes) dos últimos `quantidade` meses, do mais antigo ao atual."""
     meses = []
     ano, mes = hoje.year, hoje.month
     for _ in range(quantidade):
@@ -85,7 +77,6 @@ def _atrasos(hoje, limite=MAX_ATRASOS_NA_TABELA):
 
 
 def _com_proporcao(itens):
-    """Acrescenta a cada item a largura (0 a 100) da barra, relativa ao maior valor."""
     maior = max((item["valor"] for item in itens), default=0)
     for item in itens:
         item["percentual"] = round(item["valor"] * 100 / maior) if maior else 0
@@ -94,7 +85,7 @@ def _com_proporcao(itens):
 
 def montar_painel(hoje=None) -> dict:
     hoje = hoje or date.today()
-    atualizar_atrasos(hoje)  # garante que ATIVO vencido apareça como ATRASADO
+    atualizar_atrasos(hoje)
 
     total_exemplares = db.session.query(func.coalesce(func.sum(Livro.quantidade), 0)).scalar()
 

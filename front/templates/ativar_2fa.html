@@ -37,6 +37,18 @@
                             <div class="invalid-feedback">{{ erro }}</div>
                         {% endfor %}
                     </div>
+                    {% if precisa_aceite %}
+                    <div class="form-check mb-3">
+                        {{ form.aceite_termos(class="form-check-input" + (" is-invalid" if form.aceite_termos.errors else "")) }}
+                        <label class="form-check-label" for="aceite_termos">
+                            Li e aceito a <a href="{{ url_for('auth.politica_privacidade') }}" target="_blank">Política de Privacidade</a>
+                            e os <a href="{{ url_for('auth.termos_uso') }}" target="_blank">Termos de Aceite</a>
+                        </label>
+                        {% for erro in form.aceite_termos.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Confirmar e entrar</button>
                         <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary">Cancelar</a>

@@ -3,11 +3,11 @@ body {
     );
     background-repeat: no-repeat;
      background-attachment: fixed;
-    
+
 }
 
 .card {
-    
+
     border: none;
     border-radius: 0.75rem;
 }
@@ -17,15 +17,12 @@ body {
     border-radius: 0.5rem;
 }
 
-
 .qr-2fa svg {
     width: 220px;
     height: 220px;
     display: block;
 }
 
-
-/* ---- Painel do bibliotecário ---- */
 .kpi-rotulo {
     font-size: 0.8rem;
     font-weight: 600;
@@ -111,4 +108,25 @@ body {
 
 .barra-v-area {
     margin-bottom: 2rem;
+}
+
+.codigo-rec {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 1.15rem;
+    letter-spacing: 0.08em;
+    background: #f4f6f8;
+    border: 1px dashed #b8c2cc;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0;
+    text-align: center;
+}
+
+.texto-livre {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-line;
+}
+
+.card-body {
+    overflow-wrap: break-word;
 }

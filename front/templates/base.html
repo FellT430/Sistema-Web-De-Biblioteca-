@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block titulo %}Livro+{% endblock %}</title>
 
-
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=3" sizes="any">
@@ -25,7 +24,7 @@
             <div class="d-flex align-items-center">
                 <span class="text-light me-3">
                     Olá, {{ current_user.nome }}
-                    <span class="badge bg-secondary text-uppercase">{{ current_user.perfil }}</span>
+                    <span class="badge {{ 'bg-warning text-dark' if current_user.perfil == 'superadmin' else 'bg-secondary' }} text-uppercase">{{ current_user.perfil_nome }}</span>
                 </span>
                 {% if current_user.perfil == "aluno" %}
                 <a href="{{ url_for('notificacoes.listar') }}" class="btn btn-outline-light btn-sm me-2 position-relative" title="Notificações">

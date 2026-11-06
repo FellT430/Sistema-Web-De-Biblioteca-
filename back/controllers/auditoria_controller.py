@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, Response
 from flask_login import login_required
 
-from models import LogAuditoria
+from models import LogAuditoria, Usuario
 from decorators import perfil_requerido
 from services.auditoria import registrar, Acoes
 
@@ -15,7 +15,6 @@ POR_PAGINA = 25
 
 
 def _consulta_filtrada():
-    """Monta a consulta de logs a partir dos filtros da URL."""
     filtros = {
         "acao": request.args.get("acao", "").strip(),
         "usuario": request.args.get("usuario", "").strip(),
@@ -40,25 +39,22 @@ def _consulta_filtrada():
             inicio = datetime.strptime(filtros["data_inicio"], "%Y-%m-%d")
             consulta = consulta.filter(LogAuditoria.criado_em >= inicio)
         if filtros["data_fim"]:
-            # Inclui o dia inteiro da data final
             fim = datetime.strptime(filtros["data_fim"], "%Y-%m-%d") + timedelta(days=1)
             consulta = consulta.filter(LogAuditoria.criado_em < fim)
     except ValueError:
-        pass  # data inválida na URL: ignora o filtro
+        pass
 
     return consulta.order_by(LogAuditoria.criado_em.desc(), LogAuditoria.id.desc()), filtros
 
 
 @auditoria_bp.route("/")
 @login_required
-@perfil_requerido("admin")
+@perfil_requerido("superadmin")
 def listar():
     consulta, filtros = _consulta_filtrada()
     pagina = request.args.get("pagina", 1, type=int)
     paginacao = consulta.paginate(page=pagina, per_page=POR_PAGINA, error_out=False)
 
-    # Registra só a abertura da tela (1ª página), para não poluir o log a
-    # cada troca de página
     if pagina == 1:
         filtros_usados = ", ".join(f"{k}={v}" for k, v in filtros.items() if v) or "sem filtros"
         registrar(Acoes.ACESSO_AUDITORIA, f"Consultou os logs de auditoria ({filtros_usados})")
@@ -74,13 +70,13 @@ def listar():
 
 @auditoria_bp.route("/exportar.csv")
 @login_required
-@perfil_requerido("admin")
+@perfil_requerido("superadmin")
 def exportar_csv():
     consulta, filtros = _consulta_filtrada()
     logs = consulta.all()
 
     saida = io.StringIO()
-    escritor = csv.writer(saida, delimiter=";")  # ";" abre certo no Excel em pt-BR
+    escritor = csv.writer(saida, delimiter=";")
     escritor.writerow([
         "ID", "Data/hora", "Usuário (e-mail)", "Perfil", "Ação", "Resultado",
         "Descrição", "IP", "Método", "Rota", "Navegador",
@@ -90,7 +86,7 @@ def exportar_csv():
             log.id,
             log.criado_em.strftime("%d/%m/%Y %H:%M:%S"),
             log.usuario_email or "anônimo",
-            log.usuario_perfil or "",
+            Usuario.NOMES_PERFIL.get(log.usuario_perfil, log.usuario_perfil or ""),
             log.acao,
             "Sucesso" if log.sucesso else "Falha",
             log.descricao or "",
@@ -104,7 +100,7 @@ def exportar_csv():
 
     nome_arquivo = f"auditoria_{datetime.now():%Y%m%d_%H%M}.csv"
     return Response(
-        "﻿" + saida.getvalue(),  # BOM: faz o Excel reconhecer acentos (UTF-8)
+        "﻿" + saida.getvalue(),
         mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename={nome_arquivo}"},
     )

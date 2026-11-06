@@ -1,15 +1,3 @@
-"""Controller de Disciplinas (RF10) e das recomendações feitas pelo professor (RF11).
-
-Fluxo do professor:
-  1. "Minhas disciplinas"            -> listar()
-  2. Cadastra uma disciplina          -> nova()
-  3. Abre a disciplina e pesquisa
-     livros do acervo                 -> detalhe()
-  4. Relaciona livros à disciplina    -> adicionar_livro() / remover_livro()
-  5. Recomenda livros aos alunos      -> recomendar() / remover_recomendacao()
-
-A tela do aluno com as recomendações fica em recomendacoes_controller.py.
-"""
 from datetime import datetime
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
@@ -27,17 +15,10 @@ LIMITE_RESULTADOS_BUSCA = 30
 
 
 def _limpar(texto):
-    """Tira espaços das pontas e transforma texto vazio em None."""
     return (texto or "").strip() or None
 
 
 def _disciplina_do_professor(disciplina_id):
-    """Busca a disciplina e garante que ela é do professor logado.
-
-    RN32 / CA03: o professor só pode ver e alterar as disciplinas que ele
-    cadastrou. Tentativa de mexer na disciplina de outro professor gera
-    registro de ACESSO_NEGADO na auditoria e erro 403.
-    """
     disciplina = db.get_or_404(Disciplina, disciplina_id)
     if disciplina.professor_id != current_user.id:
         registrar(
@@ -51,14 +32,10 @@ def _disciplina_do_professor(disciplina_id):
 
 
 def _conferir_csrf():
-    """Valida o token CSRF dos botões de ação (POST sem campos)."""
     if not AcaoForm().validate_on_submit():
         abort(400)
 
 
-# ---------------------------------------------------------------------------
-# Disciplinas (RF10)
-# ---------------------------------------------------------------------------
 @disciplinas_bp.route("/")
 @login_required
 @perfil_requerido("professor")
@@ -101,11 +78,9 @@ def nova():
 @login_required
 @perfil_requerido("professor")
 def detalhe(disciplina_id):
-    """Mostra os livros da disciplina e a busca no acervo para adicionar novos."""
     disciplina = _disciplina_do_professor(disciplina_id)
     termo = request.args.get("q", "").strip()
 
-    # Busca no acervo, sem os livros que já estão na disciplina (RN34)
     ids_ja_relacionados = [livro.id for livro in disciplina.livros]
     consulta = Livro.query
     if ids_ja_relacionados:
@@ -163,8 +138,6 @@ def excluir(disciplina_id):
         f"Disciplina #{disciplina.id} '{disciplina.nome}' excluída "
         f"({len(disciplina.livros)} livro(s) relacionado(s))"
     )
-    # Os vínculos com livros e as recomendações são apagados junto (cascade);
-    # os livros continuam no acervo.
     db.session.delete(disciplina)
     db.session.commit()
 
@@ -179,9 +152,9 @@ def excluir(disciplina_id):
 def adicionar_livro(disciplina_id, livro_id):
     _conferir_csrf()
     disciplina = _disciplina_do_professor(disciplina_id)
-    livro = db.get_or_404(Livro, livro_id)  # RN33: só livros do acervo
+    livro = db.get_or_404(Livro, livro_id)
 
-    if not disciplina.adicionar_livro(livro):  # RN34 / CA02: sem duplicidade
+    if not disciplina.adicionar_livro(livro):
         flash(f"\"{livro.titulo}\" já está nesta disciplina.", "warning")
     else:
         db.session.commit()
@@ -213,20 +186,15 @@ def remover_livro(disciplina_id, livro_id):
     return redirect(url_for("disciplinas.detalhe", disciplina_id=disciplina.id))
 
 
-# ---------------------------------------------------------------------------
-# Recomendações feitas pelo professor (RF11)
-# ---------------------------------------------------------------------------
 @disciplinas_bp.route(
     "/<int:disciplina_id>/livros/<int:livro_id>/recomendar", methods=["GET", "POST"]
 )
 @login_required
 @perfil_requerido("professor")
 def recomendar(disciplina_id, livro_id):
-    """Cria (ou edita) a recomendação de um livro da disciplina."""
     disciplina = _disciplina_do_professor(disciplina_id)
     livro = db.get_or_404(Livro, livro_id)
 
-    # RN35: só dá para recomendar livro que está relacionado à disciplina
     if not disciplina.possui_livro(livro):
         flash("Relacione o livro à disciplina antes de recomendá-lo.", "warning")
         return redirect(url_for("disciplinas.detalhe", disciplina_id=disciplina.id))
@@ -248,7 +216,7 @@ def recomendar(disciplina_id, livro_id):
 
         recomendacao.mensagem = _limpar(form.mensagem.data)
         recomendacao.ativa = True
-        recomendacao.criado_em = datetime.now()  # data da recomendação (fluxo, passo 3)
+        recomendacao.criado_em = datetime.now()
         db.session.commit()
 
         registrar(
@@ -274,7 +242,6 @@ def recomendar(disciplina_id, livro_id):
 @login_required
 @perfil_requerido("professor")
 def remover_recomendacao(disciplina_id, livro_id):
-    """RN38: o professor pode remover a recomendação a qualquer momento."""
     _conferir_csrf()
     disciplina = _disciplina_do_professor(disciplina_id)
     livro = db.get_or_404(Livro, livro_id)

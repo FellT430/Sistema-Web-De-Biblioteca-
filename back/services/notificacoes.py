@@ -1,14 +1,3 @@
-"""Verificação automática de atrasos e notificações aos alunos (RF15).
-
-`verificar_e_notificar()` é a tarefa que o agendador (services/agendador.py)
-executa sozinho, sem intervenção manual (RN49). Ela:
-
-  1. marca como ATRASADO todo empréstimo ATIVO que passou do prazo (RN46/RN51);
-  2. avisa o aluno quando a devolução vence hoje ou amanhã (CA02);
-  3. avisa o aluno de cada empréstimo atrasado, uma vez por dia (CA01, RN50).
-
-Empréstimos devolvidos ou cancelados nunca geram aviso (CA03).
-"""
 from datetime import date, timedelta
 
 from models import db, Emprestimo, StatusEmprestimo, Notificacao, TipoNotificacao
@@ -16,7 +5,6 @@ from services.emprestimos import atualizar_atrasos
 
 
 def _ja_notificado(emprestimo, tipo, dia) -> bool:
-    """RN50: o mesmo empréstimo não recebe o mesmo aviso duas vezes no mesmo dia."""
     return (
         Notificacao.query.filter_by(emprestimo_id=emprestimo.id, tipo=tipo, data_referencia=dia).first()
         is not None
@@ -39,12 +27,10 @@ def _notificar(emprestimo, tipo, mensagem, dia) -> bool:
 
 
 def verificar_e_notificar(hoje=None) -> dict:
-    """Executa a verificação e devolve um resumo do que foi feito."""
     hoje = hoje or date.today()
     novos_atrasos = atualizar_atrasos(hoje)
     lembretes = avisos_atraso = 0
 
-    # Lembrete: vence hoje ou amanhã (só empréstimos ATIVOS, com o livro com o aluno)
     vencendo = Emprestimo.query.filter(
         Emprestimo.status == StatusEmprestimo.ATIVO,
         Emprestimo.data_prevista_devolucao.in_([hoje, hoje + timedelta(days=1)]),
@@ -58,7 +44,6 @@ def verificar_e_notificar(hoje=None) -> dict:
         if _notificar(emprestimo, TipoNotificacao.PRAZO_PROXIMO, mensagem, hoje):
             lembretes += 1
 
-    # Atraso: um aviso por empréstimo atrasado por dia
     atrasados = Emprestimo.query.filter(Emprestimo.status == StatusEmprestimo.ATRASADO).all()
     for emprestimo in atrasados:
         dias = emprestimo.dias_atraso(hoje)
@@ -74,7 +59,6 @@ def verificar_e_notificar(hoje=None) -> dict:
 
 
 def notificar_devolucao(emprestimo) -> None:
-    """Avisa o aluno que a devolução foi registrada (tipo DEVOLUCAO_REGISTRADA)."""
     hoje = date.today()
     mensagem = f"Devolução de \"{emprestimo.livro.titulo}\" registrada. Obrigado!"
     if emprestimo.devolvido_com_atraso:

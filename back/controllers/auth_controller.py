@@ -4,35 +4,27 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, current_app, session, abort
 from flask_login import login_user, logout_user, login_required, current_user
 
-from models import db, Usuario, LogAuditoria
-from forms import LoginForm, CadastroForm, CodigoDoisFatoresForm, AcaoAdminForm, EsqueciSenhaForm
+from models import db, Usuario, LogAuditoria, CadastroAutorizado
+from forms import (
+    LoginForm, CadastroForm, CodigoDoisFatoresForm, AcaoAdminForm, EsqueciSenhaForm,
+    CodigoRecuperacaoForm, ConfirmarCodigosForm,
+)
 from decorators import perfil_requerido
 from services.auditoria import registrar, Acoes
-from services import dois_fatores, dashboard_bibliotecario
+from services import dois_fatores, dashboard_bibliotecario, codigos_recuperacao
 from services.notificacoes import verificar_e_notificar
 
 auth_bp = Blueprint("auth", __name__)
 
 
 def detectar_perfil_pelo_email(email: str):
-    """Detecta o perfil do usuário a partir do domínio do e-mail.
-
-    Regra de negócio do projeto: o perfil não é escolhido manualmente no
-    cadastro, e sim inferido pelo domínio (ex.: @aluno.com -> aluno).
-    Os domínios aceitos ficam centralizados em Config.DOMINIOS_PERFIL.
-
-    Retorna o perfil (str) ou None se o domínio não for reconhecido.
-    """
     dominio = email.split("@")[-1].lower().strip()
     return current_app.config["DOMINIOS_PERFIL"].get(dominio)
 
 
-# ---------------------------------------------------------------------------
-# Autenticação de dois fatores (2FA) — ver services/dois_fatores.py
-# ---------------------------------------------------------------------------
-SESSAO_2FA_PENDENTE = "2fa_pendente"          # login aguardando o código
-TEMPO_MAX_2FA_SEGUNDOS = 10 * 60              # prazo para concluir a 2ª etapa após a senha
-MAX_TENTATIVAS_2FA = 5                        # tentativas antes de exigir a senha de novo
+SESSAO_2FA_PENDENTE = "2fa_pendente"
+TEMPO_MAX_2FA_SEGUNDOS = 10 * 60
+MAX_TENTATIVAS_2FA = 5
 
 
 @auth_bp.route("/", methods=["GET"])
@@ -70,7 +62,22 @@ def cadastro():
             )
             flash(
                 "E-mail não reconhecido. Use um e-mail institucional válido "
-                "(ex.: @aluno.com, @professor.com ou @bibliotecaadm.com).",
+                "(@aluno.com, @professor.com ou @bibliotecaadm.com).",
+                "danger",
+            )
+            return render_template("cadastro.html", form=form)
+
+        autorizacao = CadastroAutorizado.query.filter_by(email=email_normalizado, usado_em=None).first()
+        if autorizacao is None:
+            registrar(
+                Acoes.CADASTRO_RECUSADO,
+                "Tentativa de cadastro com e-mail não autorizado pelo Administrador",
+                email=email_normalizado,
+                sucesso=False,
+            )
+            flash(
+                "Este e-mail ainda não foi liberado para cadastro. "
+                "Procure a administração da biblioteca.",
                 "danger",
             )
             return render_template("cadastro.html", form=form)
@@ -85,16 +92,17 @@ def cadastro():
         novo_usuario.set_senha(form.senha.data)
 
         db.session.add(novo_usuario)
+        autorizacao.usado_em = datetime.now()
         db.session.commit()
 
         registrar(
             Acoes.CADASTRO_USUARIO,
-            f"Novo usuário cadastrado com perfil '{perfil_detectado}' (aceite de termos registrado)",
+            f"Novo usuário cadastrado com perfil {novo_usuario.perfil_nome} (cadastro autorizado; aceite de termos registrado)",
             usuario=novo_usuario,
         )
 
         flash(
-            f"Cadastro realizado com sucesso como {perfil_detectado}! Faça login para continuar.",
+            f"Cadastro realizado com sucesso como {novo_usuario.perfil_nome.lower()}! Faça login para continuar.",
             "success",
         )
         return redirect(url_for("auth.login"))
@@ -115,10 +123,6 @@ def login():
 
         if usuario and usuario.checar_senha(form.senha.data):
             if usuario.ativo:
-                # Senha correta é só a 1ª etapa. O 2FA é obrigatório para
-                # todos: o usuário ainda NÃO é logado aqui. Guardamos apenas
-                # um id "pendente" na sessão e seguimos para a 2ª etapa
-                # (código do Google Authenticator).
                 session.pop(SESSAO_2FA_PENDENTE, None)
                 session[SESSAO_2FA_PENDENTE] = {
                     "usuario_id": usuario.id,
@@ -134,8 +138,6 @@ def login():
                 sucesso=False,
             )
         else:
-            # A mensagem para o usuário é genérica (não revela se o e-mail
-            # existe), mas a auditoria guarda o motivo real.
             motivo = "senha incorreta" if usuario else "e-mail não cadastrado"
             registrar(
                 Acoes.LOGIN_FALHA,
@@ -152,14 +154,6 @@ def login():
 
 @auth_bp.route("/login/verificacao", methods=["GET", "POST"])
 def login_2fa():
-    """Segunda etapa do login (obrigatória para todos os usuários).
-
-    - Se o usuário ainda não configurou o app: mostra o QR Code para
-      escanear no Google Authenticator e pede o primeiro código.
-    - Se já configurou: pede apenas o código de 6 dígitos do app.
-
-    Só depois de um código válido o usuário é realmente logado.
-    """
     if current_user.is_authenticated:
         return redirect(url_for("auth.dashboard"))
 
@@ -174,8 +168,6 @@ def login_2fa():
         flash("Sua verificação expirou. Faça login novamente.", "warning")
         return redirect(url_for("auth.login"))
 
-    # Primeiro acesso: o segredo fica só na sessão até o usuário provar que
-    # escaneou o QR Code (digitando um código válido). Só então é salvo.
     primeira_configuracao = not usuario.dois_fatores_ativo
     if primeira_configuracao and not pendente.get("novo_segredo"):
         pendente["novo_segredo"] = dois_fatores.gerar_segredo()
@@ -184,7 +176,10 @@ def login_2fa():
     segredo = pendente["novo_segredo"] if primeira_configuracao else usuario.totp_secret
     form = CodigoDoisFatoresForm()
 
-    if form.validate_on_submit():
+    precisa_aceite = primeira_configuracao and not usuario.aceite_termos
+    if form.validate_on_submit() and precisa_aceite and not form.aceite_termos.data:
+        form.aceite_termos.errors = ["Você precisa aceitar a Política de Privacidade e os Termos de Aceite."]
+    elif form.validate_on_submit():
         ultimo_passo = None if primeira_configuracao else usuario.totp_ultimo_passo
         passo = dois_fatores.verificar_codigo(segredo, form.codigo.data, ultimo_passo)
 
@@ -193,6 +188,9 @@ def login_2fa():
             if primeira_configuracao:
                 usuario.totp_secret = segredo
                 usuario.dois_fatores_ativo = True
+                if precisa_aceite:
+                    usuario.aceite_termos = True
+                    usuario.aceite_termos_em = datetime.now()
             usuario.totp_ultimo_passo = passo
             db.session.commit()
 
@@ -200,6 +198,8 @@ def login_2fa():
             if primeira_configuracao:
                 registrar(Acoes.DOIS_FATORES_ATIVADO, "Google Authenticator configurado no primeiro acesso", usuario=usuario)
             registrar(Acoes.LOGIN_SUCESSO, "Login realizado com sucesso (senha + 2FA)", usuario=usuario)
+            if primeira_configuracao:
+                return _mostrar_codigos_novos(usuario, voltar_para="auth.dashboard")
             flash(f"Bem-vindo(a), {usuario.nome}!", "success")
             return redirect(url_for("auth.dashboard"))
 
@@ -225,23 +225,106 @@ def login_2fa():
             form=form,
             qr_svg=dois_fatores.qr_code_svg(uri),
             segredo_formatado=dois_fatores.formatar_segredo(segredo),
+            precisa_aceite=precisa_aceite,
         )
     return render_template("login_2fa.html", form=form)
 
 
-# ---------------------------------------------------------------------------
-# Esqueci minha senha (redefinição pelo Google Authenticator)
-# ---------------------------------------------------------------------------
-MAX_FALHAS_REDEFINICAO = 5          # tentativas erradas por e-mail...
-JANELA_FALHAS_MINUTOS = 15          # ...dentro desta janela de tempo
+SESSAO_CODIGOS_NOVOS = "codigos_recuperacao_novos"
+
+
+def _mostrar_codigos_novos(usuario, voltar_para):
+    codigos = codigos_recuperacao.gerar(usuario)
+    session[SESSAO_CODIGOS_NOVOS] = {"codigos": codigos, "voltar_para": voltar_para}
+    registrar(Acoes.CODIGOS_RECUPERACAO_GERADOS, f"{len(codigos)} códigos de recuperação gerados", usuario=usuario)
+    return redirect(url_for("auth.codigos_recuperacao_novos"))
+
+
+@auth_bp.route("/codigos-recuperacao", methods=["GET", "POST"])
+@login_required
+def codigos_recuperacao_novos():
+    dados = session.get(SESSAO_CODIGOS_NOVOS)
+    if not dados:
+        return redirect(url_for("auth.meus_dados"))
+
+    form = ConfirmarCodigosForm()
+    if form.validate_on_submit():
+        session.pop(SESSAO_CODIGOS_NOVOS, None)
+        flash("Tudo pronto! Guarde bem seus códigos de recuperação.", "success")
+        return redirect(url_for(dados["voltar_para"]))
+
+    return render_template("codigos_recuperacao.html", codigos=dados["codigos"], form=form)
+
+
+@auth_bp.route("/meus-dados/codigos-recuperacao/gerar", methods=["POST"])
+@login_required
+def gerar_codigos_recuperacao():
+    if not AcaoAdminForm().validate_on_submit():
+        abort(400)
+    if not current_user.dois_fatores_ativo:
+        flash("Configure o Google Authenticator antes de gerar códigos de recuperação.", "warning")
+        return redirect(url_for("auth.meus_dados"))
+    return _mostrar_codigos_novos(current_user, voltar_para="auth.meus_dados")
+
+
+@auth_bp.route("/login/recuperacao", methods=["GET", "POST"])
+def login_recuperacao():
+    if current_user.is_authenticated:
+        return redirect(url_for("auth.dashboard"))
+
+    pendente = session.get(SESSAO_2FA_PENDENTE)
+    if not pendente:
+        return redirect(url_for("auth.login"))
+
+    usuario = db.session.get(Usuario, pendente["usuario_id"])
+    expirado = int(time.time()) - pendente["inicio"] > TEMPO_MAX_2FA_SEGUNDOS
+    if usuario is None or not usuario.ativo or expirado or not usuario.dois_fatores_ativo:
+        session.pop(SESSAO_2FA_PENDENTE, None)
+        flash("Sua verificação expirou. Faça login novamente.", "warning")
+        return redirect(url_for("auth.login"))
+
+    form = CodigoRecuperacaoForm()
+    if form.validate_on_submit():
+        if codigos_recuperacao.usar(usuario, form.codigo.data):
+            session.pop(SESSAO_2FA_PENDENTE, None)
+            login_user(usuario)
+            sobram = codigos_recuperacao.restantes(usuario)
+            registrar(
+                Acoes.CODIGO_RECUPERACAO_USADO,
+                f"Login com código de recuperação (restam {sobram})",
+                usuario=usuario,
+            )
+            registrar(Acoes.LOGIN_SUCESSO, "Login realizado com sucesso (senha + código de recuperação)", usuario=usuario)
+            flash(
+                f"Você entrou com um código de recuperação. Restam {sobram} código(s). "
+                "Se perdeu o celular, peça ao administrador para redefinir a verificação em duas etapas "
+                "e gere novos códigos em Meus dados.",
+                "warning",
+            )
+            return redirect(url_for("auth.dashboard"))
+
+        pendente["tentativas"] += 1
+        session[SESSAO_2FA_PENDENTE] = pendente
+        registrar(
+            Acoes.DOIS_FATORES_FALHA,
+            f"Código de recuperação inválido (tentativa {pendente['tentativas']}/{MAX_TENTATIVAS_2FA})",
+            usuario=usuario,
+            sucesso=False,
+        )
+        if pendente["tentativas"] >= MAX_TENTATIVAS_2FA:
+            session.pop(SESSAO_2FA_PENDENTE, None)
+            flash("Muitas tentativas inválidas. Faça login novamente.", "danger")
+            return redirect(url_for("auth.login"))
+        flash("Código de recuperação inválido ou já utilizado.", "danger")
+
+    return render_template("login_recuperacao.html", form=form)
+
+
+MAX_FALHAS_REDEFINICAO = 5
+JANELA_FALHAS_MINUTOS = 15
 
 
 def _falhas_recentes_redefinicao(email: str) -> int:
-    """Conta as tentativas erradas recentes para o e-mail, direto na auditoria.
-
-    O limite fica no servidor (e não na sessão), então abrir outra aba ou
-    limpar os cookies não zera a contagem.
-    """
     limite = datetime.now() - timedelta(minutes=JANELA_FALHAS_MINUTOS)
     return LogAuditoria.query.filter(
         LogAuditoria.acao == Acoes.SENHA_REDEFINICAO_FALHA,
@@ -252,11 +335,6 @@ def _falhas_recentes_redefinicao(email: str) -> int:
 
 @auth_bp.route("/esqueci-senha", methods=["GET", "POST"])
 def esqueci_senha():
-    """O usuário prova que é o dono da conta com o código do Google Authenticator
-    e define uma nova senha. Não precisa de servidor de e-mail.
-
-    Quem nunca configurou o app ou perdeu o celular procura o bibliotecário.
-    """
     if current_user.is_authenticated:
         return redirect(url_for("auth.dashboard"))
 
@@ -280,7 +358,6 @@ def esqueci_senha():
             )
 
         if passo is None:
-            # Mensagem genérica: não revela se o e-mail existe nem qual campo errou.
             if usuario is None:
                 motivo = "e-mail não cadastrado"
             elif not usuario.dois_fatores_ativo:
@@ -298,13 +375,13 @@ def esqueci_senha():
             )
             flash(
                 "Não foi possível redefinir a senha: confira o e-mail e o código do app. "
-                "Se você perdeu o celular ou nunca configurou o app, procure a biblioteca.",
+                "Se você perdeu o celular ou nunca configurou o app, procure a administração do sistema.",
                 "danger",
             )
             return render_template("esqueci_senha.html", form=form)
 
         usuario.set_senha(form.nova_senha.data)
-        usuario.totp_ultimo_passo = passo  # o mesmo código não pode ser usado de novo
+        usuario.totp_ultimo_passo = passo
         db.session.commit()
         session.pop(SESSAO_2FA_PENDENTE, None)
 
@@ -318,7 +395,6 @@ def esqueci_senha():
 @auth_bp.route("/logout")
 @login_required
 def logout():
-    # Registra antes do logout_user(), enquanto ainda sabemos quem é o usuário
     registrar(Acoes.LOGOUT, "Logout realizado")
     logout_user()
     flash("Você saiu da sua conta.", "info")
@@ -328,8 +404,8 @@ def logout():
 @auth_bp.route("/dashboard")
 @login_required
 def dashboard():
-    # RF15: além do agendador (de hora em hora), a verificação roda ao abrir o
-    # painel, então um atraso visto na tela já chega como aviso ao aluno.
+    if current_user.perfil == "superadmin":
+        return redirect(url_for("admin.painel"))
     verificar_e_notificar()
     if current_user.perfil == "admin":
         return render_template(
@@ -344,54 +420,20 @@ def dashboard():
 @login_required
 def meus_dados():
     registrar(Acoes.CONSULTA_DADOS_PESSOAIS, "Usuário consultou os próprios dados pessoais (LGPD)")
-    return render_template("meus_dados.html", usuario=current_user)
+    return render_template(
+        "meus_dados.html",
+        usuario=current_user,
+        codigos_restantes=codigos_recuperacao.restantes(current_user),
+        codigos_total=codigos_recuperacao.total(current_user),
+        form_acao=AcaoAdminForm(),
+    )
 
 
 @auth_bp.route("/politica-privacidade")
 def politica_privacidade():
-    return render_template("politica_privacidade.html")
+    return render_template("politica_privacidade.html", contato_email=current_app.config["CONTATO_EMAIL"])
 
 
 @auth_bp.route("/termos-uso")
 def termos_uso():
     return render_template("termos_uso.html")
-
-
-@auth_bp.route("/admin")
-@perfil_requerido("admin")
-def area_admin():
-    usuarios = Usuario.query.order_by(Usuario.criado_em.desc()).all()
-    registrar(Acoes.ACESSO_AREA_ADMIN, f"Acessou a lista de usuários ({len(usuarios)} registros)")
-    return render_template(
-        "dashboard.html", usuario=current_user, usuarios=usuarios, form_acao=AcaoAdminForm()
-    )
-
-
-@auth_bp.route("/admin/usuarios/<int:usuario_id>/resetar-2fa", methods=["POST"])
-@perfil_requerido("admin")
-def resetar_2fa(usuario_id):
-    """Apaga o Google Authenticator de um usuário (ex.: perdeu o celular).
-
-    No próximo login, depois da senha, ele verá o QR Code de novo para
-    configurar o app em um novo aparelho.
-    """
-    form = AcaoAdminForm()
-    if not form.validate_on_submit():  # confere o token CSRF
-        abort(400)
-
-    usuario = db.get_or_404(Usuario, usuario_id)
-    usuario.dois_fatores_ativo = False
-    usuario.totp_secret = None
-    usuario.totp_ultimo_passo = None
-    db.session.commit()
-
-    registrar(
-        Acoes.DOIS_FATORES_RESETADO,
-        f"Admin resetou a verificação em duas etapas de {usuario.email}",
-    )
-    flash(
-        f"Verificação em duas etapas de {usuario.nome} foi resetada. "
-        "No próximo login, será pedido para configurar o Google Authenticator novamente.",
-        "success",
-    )
-    return redirect(url_for("auth.area_admin"))

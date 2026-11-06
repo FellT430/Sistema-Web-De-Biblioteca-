@@ -9,7 +9,6 @@ from services.auditoria import registrar, Acoes
 
 livros_bp = Blueprint("livros", __name__, url_prefix="/livros")
 
-# Campos comparados na edição para registrar na auditoria o que mudou
 CAMPOS_AUDITADOS = {
     "titulo": "título",
     "autor": "autor",
@@ -40,11 +39,6 @@ def listar():
 @login_required
 @perfil_requerido("admin")
 def buscar_google_books():
-    """Endpoint JSON usado pelo formulário de cadastro para buscar livros
-    na Google Books API (ver static/js/google_books.js). A chamada à API
-    externa fica no back-end para centralizar timeout/tratamento de erro
-    e permitir usar uma API key sem expô-la no navegador.
-    """
     termo = request.args.get("q", "").strip()
     por_isbn = request.args.get("por_isbn") == "1"
 
@@ -69,13 +63,30 @@ def buscar_google_books():
     return jsonify({"resultados": resultados})
 
 
+def _isbn_ja_cadastrado(form, livro_id=None):
+    isbn = (form.isbn.data or "").strip()
+    if not isbn:
+        return False
+    consulta = Livro.query.filter(Livro.isbn == isbn)
+    if livro_id is not None:
+        consulta = consulta.filter(Livro.id != livro_id)
+    existente = consulta.first()
+    if existente:
+        form.isbn.errors.append(
+            f"Já existe um livro com este ISBN: '{existente.titulo}'. "
+            "Para adicionar exemplares, edite a quantidade desse livro."
+        )
+        return True
+    return False
+
+
 @livros_bp.route("/novo", methods=["GET", "POST"])
 @login_required
 @perfil_requerido("admin")
 def novo():
     form = LivroForm()
 
-    if form.validate_on_submit():
+    if form.validate_on_submit() and not _isbn_ja_cadastrado(form):
         livro = Livro(
             titulo=form.titulo.data.strip(),
             autor=form.autor.data.strip(),
@@ -110,8 +121,7 @@ def editar(livro_id):
     livro = db.get_or_404(Livro, livro_id)
     form = LivroForm(obj=livro)
 
-    if form.validate_on_submit():
-        # Guarda os valores antigos para comparar depois de salvar
+    if form.validate_on_submit() and not _isbn_ja_cadastrado(form, livro.id):
         valores_antigos = {campo: getattr(livro, campo) for campo in CAMPOS_AUDITADOS}
 
         livro.titulo = form.titulo.data.strip()
@@ -148,14 +158,11 @@ def editar(livro_id):
 @login_required
 @perfil_requerido("admin")
 def excluir(livro_id):
-    # RNF04: o botão de excluir também envia o token CSRF
     if not AcaoForm().validate_on_submit():
         abort(400)
 
     livro = db.get_or_404(Livro, livro_id)
 
-    # Livro emprestado (ou com solicitação aguardando retirada) não pode ser
-    # excluído, senão o empréstimo em andamento se perderia.
     em_andamento = [e for e in livro.emprestimos if e.status in StatusEmprestimo.OCUPAM_EXEMPLAR]
     if em_andamento:
         flash(

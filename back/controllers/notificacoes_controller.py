@@ -1,14 +1,3 @@
-"""Controller das notificações (RF15).
-
-Aluno:
-  - listar()            vê seus avisos (lembretes de prazo, atrasos, devoluções)
-  - marcar_lida()       marca um aviso como lido
-  - marcar_todas()      marca todos como lidos
-
-Bibliotecário (perfil admin):
-  - verificar_agora()   roda na hora a mesma verificação que o agendador faz
-                        sozinho a cada hora (útil para demonstrar o RF15)
-"""
 from flask import Blueprint, render_template, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
 
@@ -30,7 +19,7 @@ def _conferir_csrf():
 @login_required
 @perfil_requerido("aluno")
 def listar():
-    verificar_e_notificar()  # avisos sempre em dia ao abrir a página
+    verificar_e_notificar()
     notificacoes = (
         Notificacao.query.filter_by(usuario_id=current_user.id)
         .order_by(Notificacao.lida, Notificacao.criada_em.desc())

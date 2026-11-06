@@ -1,4 +1,3 @@
-{# Selo colorido do status de um empréstimo. Uso: {% include "emprestimos/_status.html" %} com a variável "e". #}
 {% if e.status == "SOLICITADO" %}
     <span class="badge bg-info text-dark">Aguardando retirada</span>
 {% elif e.status == "ATIVO" %}

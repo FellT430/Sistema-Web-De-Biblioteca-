@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block titulo %}Painel do administrador - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="mb-3">
+    <h2 class="text-dark mb-0">Painel do administrador</h2>
+    <small class="text-dark">Contas e segurança do sistema &middot; atualizado em {{ painel.data_atualizacao.strftime("%d/%m/%Y %H:%M") }}</small>
+</div>
+
+<div class="mb-4">
+    <a href="{{ url_for('admin.usuarios') }}" class="btn btn-primary">Usuários</a>
+    <a href="{{ url_for('admin.autorizacoes') }}" class="btn btn-primary">Liberar cadastro</a>
+    <a href="{{ url_for('auditoria.listar') }}" class="btn btn-light">Logs de auditoria</a>
+</div>
+
+{% if painel.bibliotecarios_ativos == 0 %}
+<div class="alert alert-danger">
+    <strong>Nenhum bibliotecário ativo.</strong> A biblioteca não consegue cadastrar livros nem registrar
+    empréstimos. <a href="{{ url_for('admin.autorizacoes') }}" class="alert-link">Liberar cadastro de bibliotecário</a>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="kpi-rotulo">Usuários cadastrados</div>
+            <div class="kpi-valor">{{ painel.total_usuarios }}</div>
+            <div class="text-muted">{{ painel.inativos }} desativado(s) &middot;
+                <a href="{{ url_for('admin.autorizacoes') }}">{{ painel.autorizacoes_pendentes }} liberação(ões) pendente(s)</a></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="kpi-rotulo">Logins hoje</div>
+            <div class="kpi-valor text-primary">{{ painel.logins_hoje }}</div>
+            <div class="text-muted">acessos com senha + 2FA</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="kpi-rotulo">Alertas (24h)</div>
+            <div class="kpi-valor {{ 'text-danger' if painel.total_alertas else 'text-success' }}">{{ painel.total_alertas }}</div>
+            <div class="text-muted">falhas de login e acessos negados</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="kpi-rotulo">Sem 2FA configurado</div>
+            <div class="kpi-valor {{ 'text-warning' if painel.sem_2fa else 'text-success' }}">{{ painel.sem_2fa }}</div>
+            <div class="text-muted">ainda não fizeram o 1º acesso</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <h5 class="mb-3">Usuários por perfil</h5>
+            {% set maior = (painel.por_perfil | map(attribute=1) | max) or 1 %}
+            {% for nome, qtd in painel.por_perfil %}
+            <div class="barra-h">
+                <div class="barra-h-rotulo">{{ nome }}</div>
+                <div class="barra-h-trilho">
+                    <div class="progress" style="height: 14px;">
+                        <div class="progress-bar" style="width: {{ (100 * qtd / maior) | round }}%"></div>
+                    </div>
+                </div>
+                <div style="width: 2rem;" class="text-end fw-semibold">{{ qtd }}</div>
+            </div>
+            {% endfor %}
+        </div></div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <h5 class="mb-3">Alertas de segurança (24h)</h5>
+            {% set rotulos = {"LOGIN_FALHA": "Senha incorreta", "LOGIN_BLOQUEADO": "Conta desativada tentou entrar",
+                              "DOIS_FATORES_FALHA": "Código 2FA inválido", "SENHA_REDEFINICAO_FALHA": "Redefinição de senha recusada",
+                              "ACESSO_NEGADO": "Acesso negado"} %}
+            {% if painel.alertas %}
+            <ul class="list-group list-group-flush">
+                {% for acao, qtd in painel.alertas.items() %}
+                <li class="list-group-item d-flex justify-content-between px-0">
+                    <a href="{{ url_for('auditoria.listar', acao=acao) }}">{{ rotulos.get(acao, acao) }}</a>
+                    <span class="badge bg-danger rounded-pill">{{ qtd }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-success mb-0">Nenhum alerta nas últimas 24 horas.</p>
+            {% endif %}
+        </div></div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <h5 class="mb-3">Últimas ações</h5>
+            <table class="table table-sm mb-2">
+                <tbody>
+                {% for log in painel.ultimas_acoes %}
+                <tr>
+                    <td class="text-muted small text-nowrap">{{ log.criado_em.strftime("%d/%m %H:%M") }}</td>
+                    <td class="small text-break">{{ log.usuario_email or "-" }}</td>
+                    <td class="small"><code>{{ log.acao }}</code></td>
+                </tr>
+                {% else %}
+                <tr><td class="text-muted">Nenhum registro.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <a href="{{ url_for('auditoria.listar') }}" class="small">Ver todos os logs</a>
+        </div></div>
+    </div>
+</div>
+{% endblock %}
