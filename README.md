@@ -1,55 +1,95 @@
-# LIVRO + - SISTEMA WEB BIBLIOTECA (PROJETO PFC)
+# Livro + — Login e Cadastro de Usuários
 
-A Livro+ é um sistema web de biblioteca educacional que conecta professores, alunos e biblioteca, permitindo relacionar livros às disciplinas, consultar a disponibilidade dos exemplares e facilitar o acesso dos alunos a materiais recomendados pelos docentes, além de auxiliar no gerenciamento dos empréstimos e devoluções.
+Estrutura do projeto:
 
-# TECNOLOGIAS E ESTRUTURAS DO SISTEMA
-FRONT-END: Uso de HTML e CSS para estilização, desenvolvimento e design das páginas. JavaScript e Bootstrap serão utilizados para desenvolver e estruturar a interface do sistema.
+```
+projeto_login/
+├── back/                  # Back-end (Flask)
+│   ├── app.py              # Cria a aplicação (application factory)
+│   ├── config.py           # Configurações (lidas do .env)
+│   ├── models.py           # Modelo Usuario (SQLAlchemy)
+│   ├── forms.py            # Formulários com validação e CSRF
+│   ├── routes.py           # Rotas: login, cadastro, logout, dashboard
+│   ├── requirements.txt
+│   └── .env.example
+└── front/                  # Front-end (templates e assets)
+    ├── templates/
+    │   ├── base.html
+    │   ├── login.html
+    │   ├── cadastro.html
+    │   └── dashboard.html
+    └── static/
+        └── css/style.css
+```
 
-BACK-END: Python e Flask serão utilizados no desenvolvimento do back-end, realizando a conexão com o banco de dados MySQL (via SQLAlchemy) e com a Google Books API, utilizada para buscar as informações dos livros.
+## Como rodar
 
-BANCO DE DADOS: MySQL, administrado com o MySQL Workbench, e SQLAlchemy como ORM — para armazenar usuários, livros, exemplares e empréstimos, e facilitar a comunicação entre o Python e o banco. A integração externa será feita pela Google Books API para buscar automaticamente as informações dos livros (título, autor, ISBN, capa, descrição), sem precisar cadastrar tudo manualmente. A classificação obtida pela API também será utilizada pelo sistema para verificar se o livro está de acordo com as áreas definidas no projeto. A segurança e a automação de tarefas serão realizadas utilizando bibliotecas, seguindo as diretrizes da LGPD no tratamento de dados pessoais, como:
+```bash
+cd back
+python -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+python app.py
+```
 
-bcrypt / Werkzeug — para gerar e verificar o hash das senhas dos usuários.
-python-dotenv — para gerenciar e carregar variáveis de ambiente, permitindo manter configurações e informações sensíveis, como chaves de API, fora do código-fonte.
-pyotp — para autenticação de dois fatores (2FA), compatível com o Google Authenticator.
-APScheduler — para automatizar tarefas, como verificar empréstimos atrasados e disparar notificações.
-deep-translator — para traduzir informações vindas da API quando necessário.
+Acesse http://127.0.0.1:5000 — o banco SQLite (`app.db`) é criado automaticamente
+na primeira execução.
 
+## Como funciona
 
-# CONTAS COM EXEMPLOS
+- **Cadastro** (`/cadastro`): cria um usuário escolhendo o perfil (admin, professor
+  ou aluno). A senha nunca é salva em texto puro — usamos hash com
+  `werkzeug.security`.
+- **Login** (`/login`): autentica por e-mail/senha e cria a sessão com
+  `Flask-Login`.
+- **Dashboard** (`/dashboard`): conteúdo muda conforme o perfil do usuário logado.
+- **Controle de acesso por perfil**: o decorator `perfil_requerido("admin")` em
+  `routes.py` protege rotas exclusivas (veja a rota `/admin`, que lista todos
+  os usuários cadastrados).
+- **CSRF**: todos os formulários usam `Flask-WTF`, que já inclui proteção
+  contra CSRF automaticamente.
 
-Perfil	Domínio de e-mail	O que pode fazer hoje
-Aluno	@aluno.com	Login e acesso ao dashboard
-Professor	@professor.com	Login e acesso ao dashboard
-Admin/Bibliotecário	@bibliotecaadm.com	Login, dashboard, gestão de usuários e CRUD de livros
+## Verificação em duas etapas (Google Authenticator) — obrigatória
 
+Todo login tem duas etapas: primeiro e-mail e senha, depois o código de 6
+dígitos do Google Authenticator (rota `/login/verificacao`). O usuário só é
+logado depois de passar pelas duas.
 
-O aluno e o professor ainda não têm telas próprias além do dashboard — as funcionalidades específicas de cada perfil (relacionar livros a disciplinas, recomendações, empréstimos) fazem parte das próximas etapas.
+- **Primeiro acesso:** logo após a senha, o sistema gera um segredo e mostra um
+  QR Code (padrão TOTP, RFC 6238). O usuário escaneia com o Google Authenticator
+  (ou Microsoft Authenticator, Authy…) e digita o código para confirmar. O segredo
+  só é salvo depois desse código válido.
+- **Próximos acessos:** após a senha, basta digitar o código atual do app.
 
-# Como funciona o cadastro e login
+Regras de segurança implementadas:
 
-Regra de negócio central: o usuário não escolhe seu perfil no formulário de cadastro. O perfil é detectado automaticamente pelo domínio do e-mail informado (função detectar_perfil_pelo_email, em routes.py):
+- Entre a senha e o código, só fica um id "pendente" na sessão, válido por 10 minutos.
+- No máximo 5 códigos errados; depois disso é preciso digitar a senha de novo.
+- Um código já usado não é aceito de novo (proteção contra replay).
+- Tolerância de ±30 s para pequenas diferenças de relógio. **O relógio do servidor precisa estar correto.**
+- Configuração do app e códigos errados ficam registrados na auditoria.
+- **Perdeu o celular?** Na área do admin (Usuários), o botão **Resetar** na coluna
+  "Verificação em 2 etapas" apaga o app configurado daquele usuário. No próximo login
+  ele verá o QR Code de novo. O reset também fica registrado na auditoria.
 
-nome@aluno.com → perfil aluno
-nome@professor.com → perfil professor
-nome@bibliotecaadm.com → perfil admin
+Arquivos envolvidos: `back/services/dois_fatores.py`, rotas `login` e `login_2fa` em
+`back/controllers/auth_controller.py`, templates `login_2fa.html` e `ativar_2fa.html`.
+Bancos já existentes recebem as colunas novas automaticamente ao iniciar o `app.py`
+(ou rode `db/migracao_2fa.sql`).
 
-Fluxo de cadastro (/cadastro):
+## Para usar MySQL (como no projeto final)
 
-Usuário preenche nome, e-mail e senha (com confirmação).
-O sistema verifica se o e-mail já existe.
-O domínio do e-mail é comparado à lista de domínios válidos (Config.DOMINIOS_PERFIL). Se não for reconhecido, o cadastro é recusado.
-A senha é transformada em hash (werkzeug.security) — nunca é salva em texto puro.
-Usuário é criado no banco e redirecionado para o login.
+No `.env`, descomente e ajuste:
 
-Fluxo de login (/login):
+```
+DATABASE_URL=mysql+pymysql://usuario:senha@localhost/livro_mais
+```
 
-Usuário informa e-mail e senha.
-O sistema busca o usuário pelo e-mail, confere a senha (hash) e se a conta está ativa.
-Se tudo estiver correto, a sessão é criada com Flask-Login e o usuário vai para o /dashboard.
+E no `requirements.txt`, descomente `PyMySQL`.
 
-Outras rotas relacionadas:
+## Próximos passos sugeridos
 
-/logout — encerra a sessão.
-/dashboard — conteúdo do usuário logado.
-/admin — lista todos os usuários cadastrados (só para o perfil admin).
+- Adicionar recuperação de senha
+- Adicionar 2FA (pyotp), como planejado no projeto
+- Criar seed de um usuário admin inicial via comando CLI do Flask

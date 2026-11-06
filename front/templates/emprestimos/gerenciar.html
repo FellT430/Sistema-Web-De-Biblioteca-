@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block titulo %}Empréstimos - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Empréstimos e devoluções</h3>
+    <div>
+        <form method="POST" action="{{ url_for('notificacoes.verificar_agora') }}" class="d-inline"
+              title="O sistema já faz esta verificação sozinho a cada hora">
+            {{ form_acao.hidden_tag() }}
+            <button type="submit" class="btn btn-warning me-2">Verificar atrasos agora</button>
+        </form>
+        <a href="{{ url_for('auth.dashboard') }}" class="btn btn-light">Voltar</a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <ul class="nav nav-pills mb-3">
+            {% for chave, (rotulo, _) in filtros.items() %}
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if chave == filtro }}" href="{{ url_for('emprestimos.gerenciar', filtro=chave, q=termo or None) }}">
+                    {{ rotulo }}
+                    <span class="badge {{ 'bg-danger' if chave == 'atrasados' and contagens[chave] else 'bg-light text-dark' }}">{{ contagens[chave] }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <form method="GET" class="mb-3">
+            <input type="hidden" name="filtro" value="{{ filtro }}">
+            <div class="input-group">
+                <input type="text" name="q" value="{{ termo }}" class="form-control" placeholder="Pesquisar por aluno (nome ou e-mail) ou livro (título ou ISBN)">
+                <button type="submit" class="btn btn-outline-primary">Pesquisar</button>
+                {% if termo %}
+                    <a href="{{ url_for('emprestimos.gerenciar', filtro=filtro) }}" class="btn btn-outline-secondary">Limpar</a>
+                {% endif %}
+            </div>
+        </form>
+
+        {% if emprestimos %}
+        <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Aluno</th>
+                    <th>Livro</th>
+                    <th>Situação</th>
+                    <th>Solicitado</th>
+                    <th>Retirado</th>
+                    <th>Devolver até</th>
+                    {% if filtro == "historico" %}<th>Devolvido</th>{% endif %}
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in emprestimos %}
+                <tr class="{{ 'table-danger' if e.status == 'ATRASADO' }}">
+                    <td>
+                        <div class="fw-semibold">{{ e.aluno.nome }}</div>
+                        <div class="small text-muted">{{ e.aluno.email }}</div>
+                    </td>
+                    <td>
+                        <div>{{ e.livro.titulo }}</div>
+                        <div class="small text-muted">{{ e.livro.exemplares_disponiveis() }} de {{ e.livro.quantidade }} disponível(is)</div>
+                    </td>
+                    <td>{% include "emprestimos/_status.html" %}</td>
+                    <td class="small">{{ e.data_solicitacao.strftime("%d/%m/%Y %H:%M") }}</td>
+                    <td class="small">{{ e.data_emprestimo.strftime("%d/%m/%Y") if e.data_emprestimo else "-" }}</td>
+                    <td class="small">{{ e.data_prevista_devolucao.strftime("%d/%m/%Y") if e.data_prevista_devolucao else "-" }}</td>
+                    {% if filtro == "historico" %}
+                        <td class="small">{{ e.data_devolucao.strftime("%d/%m/%Y") if e.data_devolucao else "-" }}</td>
+                    {% endif %}
+                    <td class="text-end text-nowrap">
+                        {% if e.status == "SOLICITADO" %}
+                            <form method="POST" action="{{ url_for('emprestimos.confirmar', emprestimo_id=e.id, filtro=filtro, q=termo or None) }}" class="d-inline">
+                                {{ form_acao.hidden_tag() }}
+                                <button type="submit" class="btn btn-sm btn-success">Confirmar retirada</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('emprestimos.recusar', emprestimo_id=e.id, filtro=filtro, q=termo or None) }}" class="d-inline"
+                                  onsubmit="return confirm('Recusar esta solicitação? O exemplar volta a ficar disponível.');">
+                                {{ form_acao.hidden_tag() }}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Recusar</button>
+                            </form>
+                        {% elif e.status in ["ATIVO", "ATRASADO"] %}
+                            <form method="POST" action="{{ url_for('emprestimos.devolver', emprestimo_id=e.id, filtro=filtro, q=termo or None) }}" class="d-inline"
+                                  onsubmit="return confirm('Registrar a devolução deste livro?');">
+                                {{ form_acao.hidden_tag() }}
+                                <button type="submit" class="btn btn-sm btn-primary">Registrar devolução</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% elif termo %}
+        <p class="mb-0">Nenhum empréstimo encontrado para "{{ termo }}" nesta aba.</p>
+        {% else %}
+        <p class="text-muted mb-0">Nenhum empréstimo nesta aba.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

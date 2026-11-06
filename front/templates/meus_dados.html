@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block titulo %}Meus Dados - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h3 class="card-title mb-4">Meus dados</h3>
+                <p class="text-muted">
+                    Estes são os dados pessoais que o sistema mantém sobre você, conforme
+                    previsto na nossa <a href="{{ url_for('auth.politica_privacidade') }}">Política de Privacidade</a>.
+                </p>
+
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th scope="row" class="text-muted" style="width: 40%;">Nome</th>
+                            <td>{{ usuario.nome }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="text-muted">E-mail</th>
+                            <td>{{ usuario.email }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="text-muted">Perfil</th>
+                            <td><span class="badge bg-primary text-uppercase">{{ usuario.perfil }}</span></td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="text-muted">Cadastrado em</th>
+                            <td>{{ usuario.criado_em.strftime("%d/%m/%Y %H:%M") if usuario.criado_em else "-" }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="text-muted">Situação da conta</th>
+                            <td>
+                                {% if usuario.ativo %}
+                                    <span class="badge bg-success">Ativa</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativa</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="text-muted">Aceite dos termos</th>
+                            <td>
+                                {% if usuario.aceite_termos %}
+                                    <span class="badge bg-success">Aceito</span>
+                                    {% if usuario.aceite_termos_em %}
+                                        em {{ usuario.aceite_termos_em.strftime("%d/%m/%Y %H:%M") }}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Não registrado</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row" class="text-muted">Verificação em duas etapas</th>
+                            <td>
+                                {% if usuario.dois_fatores_ativo %}
+                                    <span class="badge bg-success">Ativada</span>
+                                    <small class="text-muted ms-1">(Google Authenticator, obrigatória para todos)</small>
+                                {% else %}
+                                    <span class="badge bg-secondary">Não configurada</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('auth.politica_privacidade') }}" class="btn btn-outline-secondary btn-sm">Ver Política de Privacidade</a>
+                    <a href="{{ url_for('auth.termos_uso') }}" class="btn btn-outline-secondary btn-sm">Ver Termos de Aceite</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

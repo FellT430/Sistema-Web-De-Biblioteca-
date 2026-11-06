@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Livro+{% endblock %}</title>
+
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=3" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}?v=3">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a href="{{ url_for('auth.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" class="navbar-brand p-0 me-2">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo LIVRO +" height="60">
+            </a>
+            {% if current_user.is_authenticated %}
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3">
+                    Olá, {{ current_user.nome }}
+                    <span class="badge bg-secondary text-uppercase">{{ current_user.perfil }}</span>
+                </span>
+                {% if current_user.perfil == "aluno" %}
+                <a href="{{ url_for('notificacoes.listar') }}" class="btn btn-outline-light btn-sm me-2 position-relative" title="Notificações">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6"/></svg>
+                    <span class="visually-hidden">Notificações</span>
+                    {% if notificacoes_nao_lidas %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notificacoes_nao_lidas }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+                <a href="{{ url_for('auth.meus_dados') }}" class="btn btn-outline-light btn-sm me-2">Meus dados</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">Sair</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+        {% for categoria, mensagem in mensagens %}
+        <div class="alert alert-{{ categoria }} alert-dismissible fade show" role="alert">
+            {{ mensagem }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block conteudo %}{% endblock %}
+    </main>
+
+    <footer class="text-center text-light py-4 mt-5">
+        <small>
+            <a href="{{ url_for('auth.politica_privacidade') }}" class="text-light">Política de Privacidade</a>
+            &middot;
+            <a href="{{ url_for('auth.termos_uso') }}" class="text-light">Termos de Aceite</a>
+        </small>
+    </footer>
+
+   <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+       {% block scripts %}{% endblock %}
+</body>
+
+</html>

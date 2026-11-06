@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block titulo %}Verificação em duas etapas - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-3">Verificação em duas etapas</h3>
+                <p class="text-muted text-center">
+                    Abra o <strong>Google Authenticator</strong> no seu celular e digite o
+                    código de 6 dígitos mostrado para <strong>Livro +</strong>.
+                </p>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.codigo.label(class="form-label") }}
+                        {{ form.codigo(class="form-control form-control-lg text-center" + (" is-invalid" if form.codigo.errors else ""), autofocus=true) }}
+                        {% for erro in form.codigo.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Verificar</button>
+                </form>
+
+                <p class="text-center mt-3 mb-0">
+                    <a href="{{ url_for('auth.login') }}">Voltar para o login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

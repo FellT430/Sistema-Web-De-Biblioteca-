@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block titulo %}Recomendações - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Livros recomendados pelos professores</h3>
+    <a href="{{ url_for('auth.dashboard') }}" class="btn btn-light">Voltar</a>
+</div>
+
+{% if por_disciplina %}
+    {% for disciplina, recomendacoes in por_disciplina.items() %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h5 class="mb-0">{{ disciplina.nome }}{% if disciplina.codigo %} <small class="text-muted">({{ disciplina.codigo }})</small>{% endif %}</h5>
+            <div class="small text-muted mb-3">
+                Prof. {{ disciplina.professor.nome }}{% if disciplina.descricao %} · {{ disciplina.descricao }}{% endif %}
+            </div>
+
+            <div class="list-group">
+                {% for recomendacao in recomendacoes %}
+                {% set livro = recomendacao.livro %}
+                <div class="list-group-item">
+                    <div class="d-flex">
+                        {% if livro.capa_url %}
+                            <img src="{{ livro.capa_url }}" alt="" style="width: 48px; height: 68px; object-fit: cover;" class="rounded me-3">
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('acervo.detalhe', livro_id=livro.id) }}" class="fw-semibold">{{ livro.titulo }}</a>
+                                {% set disponiveis = livro.exemplares_disponiveis() %}
+                                {% if disponiveis > 0 %}
+                                    <span class="badge bg-success align-self-start">{{ disponiveis }} disponível(is)</span>
+                                {% else %}
+                                    <span class="badge bg-danger align-self-start">Indisponível</span>
+                                {% endif %}
+                            </div>
+                            <div class="small text-muted">{{ livro.autor }}</div>
+                            {% if recomendacao.mensagem %}
+                                <div class="mt-2 p-2 bg-light rounded small">
+                                    <strong>Comentário do professor:</strong> {{ recomendacao.mensagem }}
+                                </div>
+                            {% endif %}
+                            <div class="small text-muted mt-1">Recomendado em {{ recomendacao.criado_em.strftime("%d/%m/%Y") }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <p class="text-muted mb-0">Ainda não há livros recomendados pelos professores.</p>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block titulo %}Política de Privacidade - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h3 class="card-title mb-4">Política de Privacidade</h3>
+                <p class="text-muted">Última atualização: 25/09/2026</p>
+
+                <p>
+                    Esta Política de Privacidade descreve como o sistema <strong>Livro +</strong>
+                    coleta, usa, armazena e protege os dados pessoais dos seus usuários (alunos,
+                    professores e administradores), em conformidade com a Lei Geral de Proteção
+                    de Dados (Lei nº 13.709/2018 - LGPD).
+                </p>
+
+                <h5 class="mt-4">1. Quais dados coletamos</h5>
+                <p>Coletamos apenas os dados necessários para o funcionamento do sistema:</p>
+                <ul>
+                    <li>Nome completo;</li>
+                    <li>E-mail institucional;</li>
+                    <li>Senha (armazenada de forma criptografada, nunca em texto puro);</li>
+                    <li>Perfil de acesso (aluno, professor ou administrador);</li>
+                    <li>Data de cadastro e registro de aceite dos Termos de Aceite.</li>
+                </ul>
+
+                <h5 class="mt-4">2. Como usamos seus dados</h5>
+                <p>
+                    Os dados são utilizados exclusivamente para autenticação, identificação do
+                    perfil de acesso e operação das funcionalidades da biblioteca (empréstimos,
+                    recomendações e gestão do acervo). Não compartilhamos seus dados com terceiros
+                    para fins comerciais.
+                </p>
+
+                <h5 class="mt-4">3. Seus direitos</h5>
+                <p>Como titular dos dados, você tem direito a, a qualquer momento:</p>
+                <ul>
+                    <li>Acessar os dados que temos sobre você, na página <a href="{{ url_for('auth.meus_dados') }}">Meus dados</a>;</li>
+                    <li>Solicitar a correção de dados incompletos, inexatos ou desatualizados;</li>
+                    <li>Solicitar a exclusão ou anonimização dos seus dados, exceto quando a
+                        retenção for exigida por obrigação legal;</li>
+                    <li>Revogar o consentimento dado no cadastro.</li>
+                </ul>
+
+                <h5 class="mt-4">4. Segurança</h5>
+                <p>
+                    Adotamos medidas técnicas para proteger seus dados, como criptografia de
+                    senhas e controle de acesso baseado em perfil (RBAC).
+                </p>
+
+                <h5 class="mt-4">5. Contato</h5>
+                <p>
+                    Dúvidas sobre esta política podem ser encaminhadas ao administrador do
+                    sistema.
+                </p>
+
+                <p class="text-muted fst-italic mt-4">
+                    Documento de caráter educacional/exemplo para fins deste projeto acadêmico.
+                    Em um ambiente de produção, este conteúdo deve ser revisado por um profissional
+                    jurídico.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

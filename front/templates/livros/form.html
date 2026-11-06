@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ titulo_pagina }} - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="text-end">
+            <a href="{{ url_for('livros.listar') }}" class="btn btn-light">Voltar</a>
+        </div>
+        <div class="card shadow-sm mt-2">
+            <div class="card-body p-4">
+                <h3 class="card-title mb-4">{{ titulo_pagina }}</h3>
+
+                <div class="mb-4 p-3 border rounded bg-light">
+                    <label for="busca-google-books" class="form-label fw-semibold">Buscar na Google Books</label>
+                    <div class="input-group">
+                        <input type="text" id="busca-google-books" class="form-control" placeholder="ISBN ou título do livro">
+                        <button type="button" id="btn-buscar-google-books" class="btn btn-outline-primary">Buscar</button>
+                    </div>
+                    <div class="form-text">
+                        Encontre o livro e clique no resultado para preencher o formulário automaticamente.
+                        Confira os dados antes de salvar.
+                    </div>
+                    <div id="resultados-google-books" class="list-group mt-2"></div>
+                </div>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    {{ form.capa_url() }}
+                    {{ form.google_books_id() }}
+
+                    {% if livro and livro.capa_url %}
+                        <img id="capa-preview" src="{{ livro.capa_url }}" alt="" class="mb-3 rounded" style="width: 90px; height: 126px; object-fit: cover;">
+                    {% else %}
+                        <img id="capa-preview" src="" alt="" class="mb-3 rounded d-none" style="width: 90px; height: 126px; object-fit: cover;">
+                    {% endif %}
+
+                    <div class="mb-3">
+                        {{ form.titulo.label(class="form-label") }}
+                        {{ form.titulo(class="form-control" + (" is-invalid" if form.titulo.errors else "")) }}
+                        {% for erro in form.titulo.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.autor.label(class="form-label") }}
+                        {{ form.autor(class="form-control" + (" is-invalid" if form.autor.errors else "")) }}
+                        {% for erro in form.autor.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.isbn.label(class="form-label") }}
+                            {{ form.isbn(class="form-control" + (" is-invalid" if form.isbn.errors else "")) }}
+                            {% for erro in form.isbn.errors %}
+                                <div class="invalid-feedback">{{ erro }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.editora.label(class="form-label") }}
+                            {{ form.editora(class="form-control" + (" is-invalid" if form.editora.errors else "")) }}
+                            {% for erro in form.editora.errors %}
+                                <div class="invalid-feedback">{{ erro }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.ano_publicacao.label(class="form-label") }}
+                            {{ form.ano_publicacao(class="form-control" + (" is-invalid" if form.ano_publicacao.errors else "")) }}
+                            {% for erro in form.ano_publicacao.errors %}
+                                <div class="invalid-feedback">{{ erro }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {{ form.quantidade.label(class="form-label") }}
+                            {{ form.quantidade(class="form-control" + (" is-invalid" if form.quantidade.errors else "")) }}
+                            {% for erro in form.quantidade.errors %}
+                                <div class="invalid-feedback">{{ erro }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.categoria.label(class="form-label") }}
+                        {{ form.categoria(class="form-control" + (" is-invalid" if form.categoria.errors else "")) }}
+                        {% for erro in form.categoria.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.sinopse.label(class="form-label") }}
+                        {{ form.sinopse(class="form-control" + (" is-invalid" if form.sinopse.errors else ""), rows="4") }}
+                        {% for erro in form.sinopse.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <a href="{{ url_for('livros.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/google_books.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block titulo %}Meus empréstimos - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Meus empréstimos</h3>
+    <div>
+        <a href="{{ url_for('auth.dashboard') }}" class="btn btn-light">Voltar</a>
+        <a href="{{ url_for('acervo.listar') }}" class="btn btn-primary">Consultar acervo</a>
+    </div>
+</div>
+
+{% set atrasados = em_aberto | selectattr("status", "equalto", "ATRASADO") | list %}
+{% if atrasados %}
+<div class="alert alert-danger">
+    <strong>Você tem {{ atrasados | length }} empréstimo(s) em atraso.</strong>
+    Enquanto não devolver, não é possível pegar outros livros.
+</div>
+{% endif %}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h5 class="mb-3">Em andamento</h5>
+        {% if em_aberto %}
+        <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Livro</th>
+                    <th>Situação</th>
+                    <th>Retirado em</th>
+                    <th>Devolver até</th>
+                    <th class="text-end"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in em_aberto %}
+                <tr class="{{ 'table-danger' if e.status == 'ATRASADO' }}">
+                    <td>
+                        <a href="{{ url_for('acervo.detalhe', livro_id=e.livro.id) }}" class="fw-semibold">{{ e.livro.titulo }}</a>
+                        <div class="small text-muted">{{ e.livro.autor }}</div>
+                    </td>
+                    <td>{% include "emprestimos/_status.html" %}</td>
+                    <td>{{ e.data_emprestimo.strftime("%d/%m/%Y") if e.data_emprestimo else "-" }}</td>
+                    <td>
+                        {% if e.data_prevista_devolucao %}
+                            <strong>{{ e.data_prevista_devolucao.strftime("%d/%m/%Y") }}</strong>
+                        {% else %}
+                            <span class="text-muted small">Começa a contar na retirada</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if e.status == "SOLICITADO" %}
+                        <form method="POST" action="{{ url_for('emprestimos.cancelar', emprestimo_id=e.id) }}" class="d-inline"
+                              onsubmit="return confirm('Cancelar esta solicitação?');">
+                            {{ form_acao.hidden_tag() }}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Você não tem empréstimos em andamento. <a href="{{ url_for('acervo.listar') }}">Consulte o acervo</a> para solicitar um livro.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if historico %}
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h5 class="mb-3">Histórico</h5>
+        <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Livro</th>
+                    <th>Situação</th>
+                    <th>Retirado em</th>
+                    <th>Devolvido em</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in historico %}
+                <tr>
+                    <td>{{ e.livro.titulo }}</td>
+                    <td>{% include "emprestimos/_status.html" %}</td>
+                    <td>{{ e.data_emprestimo.strftime("%d/%m/%Y") if e.data_emprestimo else "-" }}</td>
+                    <td>{{ e.data_devolucao.strftime("%d/%m/%Y") if e.data_devolucao else "-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

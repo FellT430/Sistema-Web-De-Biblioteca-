@@ -1,0 +1,114 @@
+body {
+     background-image: linear-gradient(to bottom,#0F8C7B,#0F8C51
+    );
+    background-repeat: no-repeat;
+     background-attachment: fixed;
+    
+}
+
+.card {
+    
+    border: none;
+    border-radius: 0.75rem;
+}
+
+.btn-primary,
+.btn-success {
+    border-radius: 0.5rem;
+}
+
+
+.qr-2fa svg {
+    width: 220px;
+    height: 220px;
+    display: block;
+}
+
+
+/* ---- Painel do bibliotecário ---- */
+.kpi-rotulo {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #555;
+}
+
+.kpi-valor {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.barra-h {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.barra-h-rotulo {
+    flex: 0 0 38%;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.barra-h-trilho {
+    flex: 1;
+}
+
+.barra-h-preench {
+    height: 1.25rem;
+    min-width: 4px;
+    border-radius: 0.25rem;
+    background: #198754;
+}
+
+.barra-h-valor {
+    flex: 0 0 2rem;
+}
+
+.barra-v-area {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    height: 220px;
+    padding-top: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.barra-v {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    position: relative;
+    text-align: center;
+}
+
+.barra-v-valor {
+    font-size: 0.85rem;
+}
+
+.barra-v-preench {
+    min-height: 2px;
+    border-radius: 0.25rem 0.25rem 0 0;
+    background: #0d3c91;
+}
+
+.barra-v-rotulo {
+    position: absolute;
+    bottom: -1.5rem;
+    left: 0;
+    right: 0;
+    font-size: 0.8rem;
+    color: #555;
+}
+
+.barra-v-area {
+    margin-bottom: 2rem;
+}

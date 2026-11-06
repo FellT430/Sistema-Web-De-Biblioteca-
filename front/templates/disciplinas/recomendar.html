@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block titulo %}Recomendar livro - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm mt-2">
+            <div class="card-body p-4">
+                <h3 class="card-title mb-1">{{ "Editar recomendação" if editando else "Recomendar livro" }}</h3>
+                <p class="text-muted mb-4">Disciplina: {{ disciplina.nome }}</p>
+
+                <div class="d-flex align-items-center mb-4 p-3 border rounded bg-light">
+                    {% if livro.capa_url %}
+                        <img src="{{ livro.capa_url }}" alt="" style="width: 60px; height: 84px; object-fit: cover;" class="rounded me-3">
+                    {% endif %}
+                    <div>
+                        <div class="fw-semibold">{{ livro.titulo }}</div>
+                        <div class="small text-muted">{{ livro.autor }}</div>
+                    </div>
+                </div>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-4">
+                        {{ form.mensagem.label(class="form-label") }}
+                        {{ form.mensagem(class="form-control" + (" is-invalid" if form.mensagem.errors else ""), rows=4, maxlength=500, placeholder="Ex.: Leiam os capítulos 3 e 4 antes da prova.") }}
+                        {% for erro in form.mensagem.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                        <div class="form-text">Até 500 caracteres. Os alunos verão este comentário junto com o livro.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">{{ "Salvar" if editando else "Recomendar" }}</button>
+                    <a href="{{ url_for('disciplinas.detalhe', disciplina_id=disciplina.id) }}" class="btn btn-outline-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
