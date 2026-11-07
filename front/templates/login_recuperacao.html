@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block titulo %}Entrar com código de recuperação - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-3">Entrar com código de recuperação</h3>
+                <p class="text-muted text-center">
+                    Digite um dos códigos de recuperação que você guardou ao configurar a
+                    verificação em duas etapas.
+                </p>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.codigo.label(class="form-label") }}
+                        {{ form.codigo(class="form-control form-control-lg text-center" + (" is-invalid" if form.codigo.errors else ""), autofocus=true) }}
+                        {% for erro in form.codigo.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                </form>
+
+                <div class="alert alert-info small mt-3 mb-0">
+                    Após o uso, o código deixa de valer. Você pode gerar novos códigos em <strong>Meus dados</strong>.
+                </div>
+                <p class="text-center mt-3 mb-0 small">
+                    <a href="{{ url_for('auth.login_2fa') }}">Usar o código do aplicativo</a>
+                    &middot;
+                    <a href="{{ url_for('auth.login') }}">Voltar para o login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

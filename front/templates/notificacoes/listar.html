@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block titulo %}Notificações - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Notificações</h3>
+    <div>
+        {% if notificacoes_nao_lidas %}
+        <form method="POST" action="{{ url_for('notificacoes.marcar_todas') }}" class="d-inline">
+            {{ form_acao.hidden_tag() }}
+            <button type="submit" class="btn btn-outline-light me-2">Marcar todas como lidas</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('emprestimos.meus') }}" class="btn btn-light">Meus empréstimos</a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        {% if notificacoes %}
+        <div class="list-group">
+            {% for n in notificacoes %}
+            <div class="list-group-item d-flex align-items-start {{ 'bg-light' if n.lida }}">
+                <div class="me-3 mt-1">
+                    {% if n.tipo == "ATRASO" %}
+                        <span class="badge bg-danger">Atraso</span>
+                    {% elif n.tipo == "PRAZO_PROXIMO" %}
+                        <span class="badge bg-warning text-dark">Prazo</span>
+                    {% else %}
+                        <span class="badge bg-success">Devolução</span>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="{{ 'text-muted' if n.lida else 'fw-semibold' }}">{{ n.mensagem }}</div>
+                    <div class="small text-muted">{{ n.criada_em.strftime("%d/%m/%Y %H:%M") }}</div>
+                </div>
+                {% if not n.lida %}
+                <form method="POST" action="{{ url_for('notificacoes.marcar_lida', notificacao_id=n.id) }}">
+                    {{ form_acao.hidden_tag() }}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Marcar como lida</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Você não tem notificações. Os avisos de prazo e de atraso dos seus empréstimos aparecem aqui.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block titulo %}Painel do bibliotecário - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="mb-3">
+    <h2 class="text-dark mb-0">Painel do bibliotecário</h2>
+    <small class="text-dark">Dados atualizados em {{ painel.data_atualizacao.strftime("%d/%m/%Y") }}</small>
+</div>
+
+<div class="mb-4">
+    <a href="{{ url_for('livros.listar') }}" class="btn btn-primary">Gerenciar livros</a>
+    <a href="{{ url_for('emprestimos.gerenciar') }}" class="btn btn-primary">Empréstimos</a>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="kpi-rotulo">Livros no acervo</div>
+            <div class="kpi-valor">{{ painel.total_titulos }}</div>
+            <div class="text-muted">{{ painel.total_exemplares }} exemplares no total</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="kpi-rotulo">Empréstimos em andamento</div>
+            <div class="kpi-valor text-primary">{{ painel.em_andamento }}</div>
+            <div class="text-muted">livros com os alunos</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="kpi-rotulo">Atrasados</div>
+            <div class="kpi-valor {{ 'text-danger' if painel.atrasados else 'text-success' }}">{{ painel.atrasados }}</div>
+            <div class="text-muted">passaram do prazo de devolução</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <div class="kpi-rotulo">Aguardando retirada</div>
+            <div class="kpi-valor text-success">{{ painel.aguardando_retirada }}</div>
+            <a href="{{ url_for('emprestimos.gerenciar') }}" class="small">Confirmar no balcão</a>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm"><div class="card-body p-4">
+            <h6 class="fw-semibold mb-1">Livros mais emprestados</h6>
+            <p class="text-muted small">Empréstimos efetivados por título</p>
+            {% if painel.mais_emprestados %}
+            {% for item in painel.mais_emprestados %}
+            <div class="barra-h">
+                <span class="barra-h-rotulo" title="{{ item.rotulo }}">{{ item.rotulo }}</span>
+                <div class="barra-h-trilho">
+                    <div class="barra-h-preench" style="width: {{ item.percentual }}%"></div>
+                </div>
+                <span class="barra-h-valor">{{ item.valor }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-muted mb-0">Nenhum empréstimo registrado ainda.</p>
+            {% endif %}
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm"><div class="card-body p-4">
+            <h6 class="fw-semibold mb-1">Empréstimos por mês</h6>
+            <p class="text-muted small">Retiradas confirmadas nos últimos {{ painel.por_mes|length }} meses</p>
+            <div class="barra-v-area">
+                {% for item in painel.por_mes %}
+                <div class="barra-v">
+                    <span class="barra-v-valor">{{ item.valor }}</span>
+                    <div class="barra-v-preench" style="height: {{ item.percentual }}%"></div>
+                    <span class="barra-v-rotulo">{{ item.rotulo }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div></div>
+    </div>
+</div>
+
+<div class="card shadow-sm"><div class="card-body p-4">
+    <h6 class="fw-semibold mb-3">Atenção: devoluções em atraso</h6>
+    {% if painel.atrasos %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr><th>Aluno</th><th>Livro</th><th>Prazo</th><th>Atraso</th></tr>
+            </thead>
+            <tbody>
+                {% for a in painel.atrasos %}
+                <tr>
+                    <td>{{ a.aluno }}</td>
+                    <td>{{ a.livro }}</td>
+                    <td>{{ a.prazo.strftime("%d/%m/%Y") }}</td>
+                    <td><span class="badge bg-danger">{{ a.dias_atraso }} dia{{ 's' if a.dias_atraso != 1 }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">Nenhuma devolução em atraso. Tudo em dia!</p>
+    {% endif %}
+</div></div>
+{% endblock %}

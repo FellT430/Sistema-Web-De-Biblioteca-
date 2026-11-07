@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block titulo %}Esqueci minha senha - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-2">Esqueci minha senha</h3>
+                <p class="text-muted text-center small mb-4">
+                    Informe seu e-mail e o código de 6 dígitos que aparece agora no
+                    <strong>Google Authenticator</strong> para criar uma nova senha.
+                </p>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    {% for campo in [form.email, form.codigo, form.nova_senha, form.confirmar_senha] %}
+                    <div class="mb-3">
+                        {{ campo.label(class="form-label") }}
+                        {{ campo(class="form-control" + (" is-invalid" if campo.errors else "")) }}
+                        {% for erro in campo.errors %}
+                            <div class="invalid-feedback">{{ erro }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-primary w-100">Redefinir senha</button>
+                </form>
+
+                <p class="text-center small text-muted mt-3 mb-1">
+                    Perdeu o celular ou nunca configurou o app? Procure a administração do sistema.
+                </p>
+                <p class="text-center mb-0">
+                    <a href="{{ url_for('auth.login') }}">Voltar para o login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

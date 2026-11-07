@@ -1,0 +1,5 @@
+back/.env
+back/venv/
+__pycache__/
+back/logs/
+back/app.db

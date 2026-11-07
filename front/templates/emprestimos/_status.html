@@ -1,0 +1,15 @@
+{% if e.status == "SOLICITADO" %}
+    <span class="badge bg-info text-dark">Aguardando retirada</span>
+{% elif e.status == "ATIVO" %}
+    <span class="badge bg-primary">Ativo</span>
+{% elif e.status == "ATRASADO" %}
+    <span class="badge bg-danger">Atrasado · {{ e.dias_atraso() }} dia(s)</span>
+{% elif e.status == "DEVOLVIDO" %}
+    {% if e.devolvido_com_atraso %}
+        <span class="badge bg-warning text-dark">Devolvido com {{ e.dias_atraso() }} dia(s) de atraso</span>
+    {% else %}
+        <span class="badge bg-success">Devolvido</span>
+    {% endif %}
+{% elif e.status == "CANCELADO" %}
+    <span class="badge bg-secondary">Cancelado</span>
+{% endif %}

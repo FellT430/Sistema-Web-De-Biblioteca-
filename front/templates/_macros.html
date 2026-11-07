@@ -1,0 +1,8 @@
+{% macro texto_longo(texto, limite=180) -%}
+{%- if texto | length > limite -%}
+<span class="texto-livre"><span class="tl-curto">{{ texto[:limite] }}&hellip;</span><span class="tl-completo d-none">{{ texto }}</span>
+<a href="#" class="small ms-1 text-nowrap" onclick="var p=this.parentNode;p.querySelector('.tl-curto').classList.toggle('d-none');p.querySelector('.tl-completo').classList.toggle('d-none');this.textContent=this.textContent==='Ler mais'?'Ler menos':'Ler mais';return false;">Ler mais</a></span>
+{%- else -%}
+<span class="texto-livre">{{ texto }}</span>
+{%- endif -%}
+{%- endmacro %}

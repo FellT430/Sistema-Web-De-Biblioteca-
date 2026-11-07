@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% from "_macros.html" import texto_longo %}
+
+{% block titulo %}{{ livro.titulo }} - Livro +{% endblock %}
+
+{% block conteudo %}
+{% set disponiveis = livro.exemplares_disponiveis() %}
+<div class="d-flex justify-content-end mb-3">
+    <a href="{{ url_for('acervo.listar', q=voltar_q or None) }}" class="btn btn-light">Voltar ao acervo</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="row">
+            <div class="col-md-3 mb-3 mb-md-0 text-center">
+                {% if livro.capa_url %}
+                    <img src="{{ livro.capa_url }}" alt="Capa de {{ livro.titulo }}" class="rounded shadow-sm img-fluid" style="max-height: 260px;">
+                {% else %}
+                    <div class="rounded bg-light border d-flex align-items-center justify-content-center text-muted mx-auto" style="width: 160px; height: 230px;">Sem capa</div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-9">
+                <h3 class="mb-1">{{ livro.titulo }}</h3>
+                <p class="text-muted mb-3">{{ livro.autor }}</p>
+
+                {% if disponiveis > 0 %}
+                    <span class="badge bg-success fs-6 mb-3">{{ disponiveis }} exemplar(es) disponível(is) de {{ livro.quantidade }}</span>
+                {% else %}
+                    <span class="badge bg-danger fs-6 mb-3">Nenhum exemplar disponível no momento</span>
+                {% endif %}
+
+                {% if current_user.perfil == "aluno" %}
+                <div class="mb-3">
+                    {% if motivo_bloqueio %}
+                        <div class="alert alert-warning py-2 mb-0">{{ motivo_bloqueio }}
+                            <a href="{{ url_for('emprestimos.meus') }}" class="alert-link">Ver meus empréstimos</a>
+                        </div>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('emprestimos.solicitar', livro_id=livro.id) }}"
+                              onsubmit="return confirm('Solicitar o empréstimo deste livro? Depois é só retirar na biblioteca.');">
+                            {{ form_acao.hidden_tag() }}
+                            <button type="submit" class="btn btn-primary">Solicitar empréstimo</button>
+                            <span class="form-text ms-2">Prazo de {{ config.PRAZO_DEVOLUCAO_DIAS }} dias a partir da retirada.</span>
+                        </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Editora</dt>
+                    <dd class="col-sm-9">{{ livro.editora or "-" }}</dd>
+
+                    <dt class="col-sm-3">Ano</dt>
+                    <dd class="col-sm-9">{{ livro.ano_publicacao or "-" }}</dd>
+
+                    <dt class="col-sm-3">ISBN</dt>
+                    <dd class="col-sm-9">{{ livro.isbn or "-" }}</dd>
+
+                    <dt class="col-sm-3">Categoria</dt>
+                    <dd class="col-sm-9">{{ livro.categoria or "-" }}</dd>
+
+                    <dt class="col-sm-3">Disciplinas</dt>
+                    <dd class="col-sm-9">
+                        {% if livro.disciplinas %}
+                            {% for disciplina in livro.disciplinas %}
+                                <span class="badge bg-secondary">{{ disciplina.nome }}</span>
+                            {% endfor %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <hr>
+        <h5>Sinopse</h5>
+        {% if livro.sinopse %}
+            <p class="mb-0" style="white-space: pre-line;">{{ livro.sinopse }}</p>
+        {% else %}
+            <p class="text-muted mb-0">Sinopse não informada.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if recomendacoes %}
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <h5 class="mb-3">Recomendado pelos professores</h5>
+        <div class="list-group">
+            {% for recomendacao in recomendacoes %}
+            <div class="list-group-item">
+                <div class="fw-semibold">{{ recomendacao.disciplina.nome }}</div>
+                <div class="small text-muted">Prof. {{ recomendacao.disciplina.professor.nome }} · {{ recomendacao.criado_em.strftime("%d/%m/%Y") }}</div>
+                {% if recomendacao.mensagem %}
+                    <div class="mt-1">"{{ texto_longo(recomendacao.mensagem) }}"</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
