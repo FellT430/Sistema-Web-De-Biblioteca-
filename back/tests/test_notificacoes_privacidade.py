@@ -12,13 +12,12 @@ from services.auditoria import registrar
 from services.privacidade import RegraPrivacidadeError
 
 
-# ---------------------------------------------------------------- Notificações
 def test_verificacao_gera_atraso_e_lembretes(app, fabrica):
     hoje = date.today()
     atrasado = fabrica.emprestimo(fabrica.usuario(), fabrica.livro(), prazo=hoje - timedelta(days=2))
-    fabrica.emprestimo(fabrica.usuario(), fabrica.livro(), prazo=hoje)                      # vence hoje
-    fabrica.emprestimo(fabrica.usuario(), fabrica.livro(), prazo=hoje + timedelta(days=1))  # vence amanhã
-    fabrica.emprestimo(fabrica.usuario(), fabrica.livro(), prazo=hoje + timedelta(days=5))  # longe
+    fabrica.emprestimo(fabrica.usuario(), fabrica.livro(), prazo=hoje)                      
+    fabrica.emprestimo(fabrica.usuario(), fabrica.livro(), prazo=hoje + timedelta(days=1))  
+    fabrica.emprestimo(fabrica.usuario(), fabrica.livro(), prazo=hoje + timedelta(days=5))  
 
     resumo = notificacoes.verificar_e_notificar(hoje)
 
@@ -33,7 +32,7 @@ def test_mesmo_aviso_nao_se_repete_no_mesmo_dia(app, fabrica):
     hoje = date.today()
     fabrica.emprestimo(fabrica.usuario(), fabrica.livro(), prazo=hoje - timedelta(days=1))
     notificacoes.verificar_e_notificar(hoje)
-    segunda = notificacoes.verificar_e_notificar(hoje)  # o agendador roda de hora em hora
+    segunda = notificacoes.verificar_e_notificar(hoje)  
     assert segunda["avisos_atraso"] == 0
     assert Notificacao.query.filter_by(tipo=TipoNotificacao.ATRASO).count() == 1
 
@@ -56,7 +55,6 @@ def test_falha_no_email_nao_interrompe_o_envio(app):
     assert notificacoes._enviar_emails([quebra, lambda: True]) == 1
 
 
-# ---------------------------------------------------------------- Privacidade (LGPD)
 def test_aluno_solicita_exclusao(app, fabrica):
     aluno = fabrica.usuario()
     privacidade.solicitar_exclusao(aluno)
@@ -105,9 +103,9 @@ def test_confirmar_exclusao_anonimiza_e_mantem_historico(app, fabrica):
     assert not aluno.checar_senha("Senha@123")
     assert CodigoRecuperacao.query.filter_by(usuario_id=aluno.id).count() == 0
     assert Notificacao.query.filter_by(usuario_id=aluno.id).count() == 0
-    # histórico de empréstimos continua, apontando para a conta anonimizada
+ 
     assert db.session.get(type(devolvido), devolvido.id).aluno_id == aluno.id
-    # logs continuam, mas sem o e-mail original
+    
     assert LogAuditoria.query.filter(LogAuditoria.usuario_email == "maria@aluno.com").count() == 0
     assert LogAuditoria.query.filter(LogAuditoria.descricao.contains("maria@aluno.com")).count() == 0
     assert Usuario.query.filter_by(email="maria@aluno.com").first() is None
