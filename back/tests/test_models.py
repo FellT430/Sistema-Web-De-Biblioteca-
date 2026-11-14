@@ -7,7 +7,7 @@ from models import (
 )
 
 
-# ---------------------------------------------------------------- Usuario
+
 def test_senha_e_guardada_em_hash_e_conferida(app, fabrica):
     usuario = fabrica.usuario(senha="MinhaSenha1")
     assert usuario.senha_hash != "MinhaSenha1"
@@ -32,13 +32,13 @@ def test_propriedades_do_usuario(app, fabrica):
     assert aluno.anonimizado and not aluno.exclusao_pendente
 
 
-# ---------------------------------------------------------------- Livro
+
 def test_exemplares_disponiveis_desconta_emprestimos_em_andamento(app, fabrica):
     livro = fabrica.livro(quantidade=3)
     a1, a2, a3 = fabrica.usuario(), fabrica.usuario(), fabrica.usuario()
     fabrica.emprestimo(a1, livro, StatusEmprestimo.SOLICITADO)
     fabrica.emprestimo(a2, livro, StatusEmprestimo.ATIVO)
-    fabrica.emprestimo(a3, livro, StatusEmprestimo.DEVOLVIDO)  # devolvido não ocupa
+    fabrica.emprestimo(a3, livro, StatusEmprestimo.DEVOLVIDO)  
     db.session.refresh(livro)
     assert livro.exemplares_disponiveis() == 1
 
@@ -61,7 +61,6 @@ def test_reservas_na_fila_conta_so_aguardando(app, fabrica):
     assert livro.reservas_na_fila() == 1
 
 
-# ---------------------------------------------------------------- Emprestimo
 def test_emprestimo_atrasado_e_dias_de_atraso(app, fabrica):
     livro, aluno = fabrica.livro(), fabrica.usuario()
     hoje = date.today()
@@ -92,7 +91,7 @@ def test_solicitado_sem_prazo_nao_tem_atraso(app, fabrica):
     assert not emprestimo.esta_atrasado()
 
 
-# ---------------------------------------------------------------- Reserva
+
 def test_posicao_na_fila_segue_ordem_de_chegada(app, fabrica):
     livro = fabrica.livro()
     agora = datetime.now()
@@ -109,7 +108,7 @@ def test_posicao_na_fila_segue_ordem_de_chegada(app, fabrica):
     assert segunda.posicao_na_fila() == 1
 
 
-# ---------------------------------------------------------------- Notificacao e CodigoRecuperacao
+
 def test_marcar_notificacao_como_lida(app, fabrica):
     aluno = fabrica.usuario()
     notificacao = Notificacao(usuario_id=aluno.id, tipo=TipoNotificacao.ATRASO, mensagem="x")
