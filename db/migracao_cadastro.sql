@@ -1,0 +1,4 @@
+ALTER TABLE usuarios ADD COLUMN status_cadastro VARCHAR(30) NOT NULL DEFAULT 'APROVADO';
+ALTER TABLE usuarios ADD COLUMN email_confirmado_em DATETIME NULL;
+ALTER TABLE usuarios ADD COLUMN aprovado_em DATETIME NULL;
+ALTER TABLE usuarios ADD COLUMN aprovado_por_id INT NULL;

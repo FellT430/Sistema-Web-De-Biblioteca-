@@ -3,3 +3,6 @@ back/venv/
 __pycache__/
 back/logs/
 back/app.db
+back/.pytest_cache/
+back/.coverage
+back/htmlcov/

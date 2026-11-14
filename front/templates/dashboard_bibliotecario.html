@@ -3,44 +3,36 @@
 {% block titulo %}Painel do bibliotecário - Livro +{% endblock %}
 
 {% block conteudo %}
-<div class="mb-3">
-    <h2 class="text-dark mb-0">Painel do bibliotecário</h2>
-    <small class="text-dark">Dados atualizados em {{ painel.data_atualizacao.strftime("%d/%m/%Y") }}</small>
-</div>
-
-<div class="mb-4">
-    <a href="{{ url_for('livros.listar') }}" class="btn btn-primary">Gerenciar livros</a>
-    <a href="{{ url_for('emprestimos.gerenciar') }}" class="btn btn-primary">Empréstimos</a>
+{% from "_macros.html" import kpi, icone %}
+<div class="cabecalho-pagina">
+    <div>
+        <h2 class="mb-0">Painel do bibliotecário</h2>
+        <p>Visão geral do acervo e dos empréstimos &middot; atualizado em {{ painel.data_atualizacao.strftime("%d/%m/%Y") }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('livros.listar') }}" class="btn btn-light">{{ icone("livro", 17) }} Gerenciar livros</a>
+        <a href="{{ url_for('emprestimos.gerenciar') }}" class="btn btn-primary">{{ icone("troca", 17) }} Empréstimos</a>
+    </div>
 </div>
 
 <div class="row g-3 mb-3">
-    <div class="col-6 col-lg-3">
-        <div class="card h-100 shadow-sm"><div class="card-body">
-            <div class="kpi-rotulo">Livros no acervo</div>
-            <div class="kpi-valor">{{ painel.total_titulos }}</div>
-            <div class="text-muted">{{ painel.total_exemplares }} exemplares no total</div>
-        </div></div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        {% call kpi("Livros no acervo", painel.total_titulos, "azul", "livro", url=url_for('livros.listar')) %}{{ painel.total_exemplares }} exemplares no total{% endcall %}
     </div>
-    <div class="col-6 col-lg-3">
-        <div class="card h-100 shadow-sm"><div class="card-body">
-            <div class="kpi-rotulo">Empréstimos em andamento</div>
-            <div class="kpi-valor text-primary">{{ painel.em_andamento }}</div>
-            <div class="text-muted">livros com os alunos</div>
-        </div></div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        {% call kpi("Em andamento", painel.em_andamento, "azul", "troca", url=url_for('emprestimos.gerenciar', filtro='andamento')) %}livros com os alunos{% endcall %}
     </div>
-    <div class="col-6 col-lg-3">
-        <div class="card h-100 shadow-sm"><div class="card-body">
-            <div class="kpi-rotulo">Atrasados</div>
-            <div class="kpi-valor {{ 'text-danger' if painel.atrasados else 'text-success' }}">{{ painel.atrasados }}</div>
-            <div class="text-muted">passaram do prazo de devolução</div>
-        </div></div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        {% call kpi("Atrasados", painel.atrasados, "vermelho" if painel.atrasados else "verde", "alerta" if painel.atrasados else "check",
+                      url=url_for('emprestimos.gerenciar', filtro='atrasados')) %}
+            {{ "passaram do prazo de devolução" if painel.atrasados else "nenhuma devolução atrasada" }}
+        {% endcall %}
     </div>
-    <div class="col-6 col-lg-3">
-        <div class="card h-100 shadow-sm"><div class="card-body">
-            <div class="kpi-rotulo">Aguardando retirada</div>
-            <div class="kpi-valor text-success">{{ painel.aguardando_retirada }}</div>
-            <a href="{{ url_for('emprestimos.gerenciar') }}" class="small">Confirmar no balcão</a>
-        </div></div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        {% call kpi("Aguardando retirada", painel.aguardando_retirada, "amarelo" if painel.aguardando_retirada else "verde", "caixa",
+                      url=url_for('emprestimos.gerenciar', filtro='pendentes')) %}
+            Confirmar no balcão
+        {% endcall %}
     </div>
 </div>
 

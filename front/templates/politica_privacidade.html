@@ -8,7 +8,7 @@
         <div class="card shadow-sm mt-4">
             <div class="card-body p-4">
                 <h3 class="card-title mb-4">Política de Privacidade</h3>
-                <p class="text-muted">Última atualização: 25/09/2026</p>
+                <p class="text-muted">Última atualização: 14/11/2026</p>
 
                 <p>
                     Esta Política de Privacidade descreve como o sistema <strong>Livro +</strong>
@@ -24,19 +24,19 @@
                     <li>E-mail institucional;</li>
                     <li>Senha (armazenada de forma criptografada, nunca em texto puro);</li>
                     <li>Perfil de acesso (aluno, professor, bibliotecário ou administrador);</li>
-                    <li>Data de cadastro e registro de aceite dos Termos de Aceite;</li>
-                    <li>Registros de acesso e de uso (data e hora, endereço IP, navegador utilizado e
-                        ações realizadas), mantidos para a segurança e a auditoria do sistema, conforme o
-                        Marco Civil da Internet (Lei nº 12.965/2014, art. 15);</li>
-                    <li>Histórico de empréstimos e recomendações, necessário para o funcionamento da biblioteca.</li>
+                    <li>Data de cadastro, de confirmação do e-mail, de aprovação do cadastro e registro de aceite dos Termos de Aceite;</li>
+                    <li>Registros de acesso e de uso (data e hora, endereço IP, navegador utilizado e ações realizadas), 
+                        mantidos para a segurança e a auditoria do sistema, conforme o Marco Civil da Internet (Lei nº 12.965/2014, art. 15). 
+                        Mesmo quando os dados de uma conta são anonimizados, esses registros continuam guardando o endereço IP, por ser necessário para a apuração de incidentes de segurança, e só podem ser consultados pelo administrador do sistema;</li>
+                    <li>Histórico de empréstimos, reservas e recomendações, necessário para o funcionamento da biblioteca.</li>
                 </ul>
 
                 <h5 class="mt-4">2. Como usamos seus dados</h5>
                 <p>
-                    Os dados são utilizados exclusivamente para autenticação, identificação do
-                    perfil de acesso e operação das funcionalidades da biblioteca (empréstimos,
-                    recomendações e gestão do acervo). Não compartilhamos seus dados com terceiros
-                    para fins comerciais.
+                    Os dados são utilizados exclusivamente para autenticação, identificação do perfil de acesso e operação das funcionalidades da biblioteca 
+                    (empréstimos, reservas, recomendações e gestão do acervo). 
+                    O e-mail também é usado para enviar mensagens do próprio sistema, como a confirmação do cadastro, o aviso de aprovação e as notificações sobre prazos de devolução, atrasos e reservas.
+                    Não compartilhamos seus dados com terceiros para fins comerciais.
                 </p>
 
                 <h5 class="mt-4">3. Seus direitos</h5>
@@ -44,19 +44,36 @@
                 <ul>
                     <li>Acessar os dados que temos sobre você, na página <a href="{{ url_for('auth.meus_dados') }}">Meus dados</a>;</li>
                     <li>Solicitar a correção de dados incompletos, inexatos ou desatualizados;</li>
-                    <li>Solicitar a exclusão ou anonimização dos seus dados, exceto quando a
-                        retenção for exigida por obrigação legal;</li>
+                    <li>Solicitar a exclusão ou anonimização dos seus dados, exceto quando a retenção for exigida por obrigação legal ou necessária à segurança do sistema, como os registros de acesso descritos no item 1;</li>
                     <li>Revogar o consentimento dado no cadastro.</li>
                 </ul>
 
-                <h5 class="mt-4">4. Segurança</h5>
+                <h5 class="mt-4">4. Como solicitar a exclusão dos seus dados</h5>
+                <p>
+                    Em <a href="{{ url_for('auth.meus_dados') }}">Meus dados</a>, use o botão
+                    <strong>"Solicitar exclusão dos meus dados"</strong> e confirme com a sua senha. O pedido é
+                    analisado pela administração, e você recebe um e-mail com a decisão. Só é possível
+                    solicitar a exclusão depois de devolver todos os livros em seu poder.
+                </p>
+                <ul>
+                    <li>A exclusão é feita por <strong>anonimização</strong>: seu nome, e-mail e senha são
+                        substituídos por valores sem relação com você, a verificação em duas etapas e os
+                        códigos de recuperação são apagados, e a conta é encerrada de forma definitiva.</li>
+                    <li>O <strong>histórico de empréstimos e reservas é mantido</strong>, mas sem identificar
+                        você (aparece como "Usuário removido"). Disciplinas e recomendações de professores
+                        também permanecem, com o mesmo texto no lugar do nome.</li>
+                    <li>Os <strong>registros de auditoria</strong> continuam guardados por segurança, inclusive
+                        o endereço IP e o navegador utilizados, mas deixam de exibir seu e-mail.</li>
+                </ul>
+
+                <h5 class="mt-4">5. Segurança</h5>
                 <p>
                     Adotamos medidas técnicas para proteger seus dados, como armazenamento das
                     senhas em hash, verificação em duas etapas, conexão segura (HTTPS),
                     controle de acesso baseado em perfil (RBAC) e registro de auditoria.
                 </p>
 
-                <h5 class="mt-4">5. Contato</h5>
+                <h5 class="mt-4">6. Contato</h5>
                 <p>
                     Dúvidas, solicitações sobre seus dados pessoais ou o exercício dos direitos
                     descritos acima podem ser encaminhados à administração do sistema pelo e-mail

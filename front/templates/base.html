@@ -7,36 +7,73 @@
     <title>{% block titulo %}Livro+{% endblock %}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20261114">
     <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=3" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}?v=3">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
 </head>
 
-<body>
+<body class="{% block classe_pagina %}{% endblock %}">
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    {% from "_macros.html" import icone %}
+    {% if current_user.is_authenticated %}
+        {% set p = current_user.perfil %}
+        {% if p == "aluno" %}
+            {% set menu = [("auth.dashboard", "Início", "inicio"), ("recomendacoes.listar", "Recomendados", "estrela"),
+                           ("acervo.listar", "Acervo", "busca"), ("emprestimos.meus", "Meus empréstimos", "troca")] %}
+        {% elif p == "professor" %}
+            {% set menu = [("auth.dashboard", "Início", "inicio"), ("disciplinas.listar", "Disciplinas", "camadas"),
+                           ("recomendacoes.listar", "Recomendações", "estrela"), ("acervo.listar", "Acervo", "busca")] %}
+        {% elif p == "admin" %}
+            {% set menu = [("auth.dashboard", "Painel", "inicio"), ("livros.listar", "Livros", "livro"),
+                           ("emprestimos.gerenciar", "Empréstimos", "troca"), ("acervo.listar", "Acervo", "busca")] %}
+        {% else %}
+            {% set menu = [("admin.painel", "Painel", "inicio"), ("admin.usuarios", "Usuários", "usuarios"),
+                           ("admin.solicitacoes", "Solicitações", "usuario-ok"), ("auditoria.listar", "Auditoria", "arquivo")] %}
+        {% endif %}
+    {% endif %}
+
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-livro">
         <div class="container">
-            <a href="{{ url_for('auth.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" class="navbar-brand p-0 me-2">
-                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo LIVRO +" height="60">
+            <a href="{{ url_for('auth.dashboard') if current_user.is_authenticated else url_for('auth.login') }}" class="navbar-brand p-0 me-3">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo LIVRO +">
             </a>
             {% if current_user.is_authenticated %}
-            <div class="d-flex align-items-center">
-                <span class="text-light me-3">
-                    Olá, {{ current_user.nome }}
-                    <span class="badge {{ 'bg-warning text-dark' if current_user.perfil == 'superadmin' else 'bg-secondary' }} text-uppercase">{{ current_user.perfil_nome }}</span>
-                </span>
-                {% if current_user.perfil == "aluno" %}
-                <a href="{{ url_for('notificacoes.listar') }}" class="btn btn-outline-light btn-sm me-2 position-relative" title="Notificações">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6"/></svg>
-                    <span class="visually-hidden">Notificações</span>
-                    {% if notificacoes_nao_lidas %}
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notificacoes_nao_lidas }}</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal"
+                    aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="menuPrincipal">
+                <ul class="navbar-nav me-auto gap-lg-1 mt-2 mt-lg-0">
+                    {% for endpoint, rotulo, nome_icone in menu %}
+                    {% set bp_link = endpoint.split('.')[0] %}
+                    {% set ativo = request.endpoint == endpoint or (bp_link == request.blueprint and bp_link not in ('auth', 'admin')) %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if ativo }}" href="{{ url_for(endpoint) }}" {{ 'aria-current="page"' | safe if ativo }}>
+                            {{ icone(nome_icone, 17) }} {{ rotulo }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="d-flex align-items-center gap-2 py-2 py-lg-0">
+                    <div class="usuario-chip me-1">
+                        <span class="usuario-avatar">{{ current_user.nome[:1] | upper }}</span>
+                        <span class="d-flex flex-column">
+                            <span class="fw-semibold">{{ current_user.nome.split(' ')[0] }}</span>
+                            <small>{{ current_user.perfil_nome }}</small>
+                        </span>
+                    </div>
+                    {% if current_user.perfil == "aluno" %}
+                    <a href="{{ url_for('notificacoes.listar') }}" class="btn-nav" title="Notificações">
+                        {{ icone("sino", 17) }}<span class="visually-hidden">Notificações</span>
+                        {% if notificacoes_nao_lidas %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notificacoes_nao_lidas }}</span>
+                        {% endif %}
+                    </a>
                     {% endif %}
-                </a>
-                {% endif %}
-                <a href="{{ url_for('auth.meus_dados') }}" class="btn btn-outline-light btn-sm me-2">Meus dados</a>
-                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">Sair</a>
+                    <a href="{{ url_for('auth.meus_dados') }}" class="btn-nav" title="Meus dados">{{ icone("pessoa", 17) }}<span class="d-lg-none d-xl-inline">Meus dados</span></a>
+                    <a href="{{ url_for('auth.logout') }}" class="btn-nav" title="Sair">{{ icone("sair", 17) }}<span class="d-lg-none d-xl-inline">Sair</span></a>
+                </div>
             </div>
             {% endif %}
         </div>
@@ -57,12 +94,15 @@
         {% block conteudo %}{% endblock %}
     </main>
 
-    <footer class="text-center text-light py-4 mt-5">
-        <small>
-            <a href="{{ url_for('auth.politica_privacidade') }}" class="text-light">Política de Privacidade</a>
-            &middot;
-            <a href="{{ url_for('auth.termos_uso') }}" class="text-light">Termos de Aceite</a>
-        </small>
+    <footer class="rodape">
+        <div class="container d-flex flex-wrap justify-content-between gap-2">
+            <span>LIVRO+ &middot; Sistema de gestão de biblioteca educacional</span>
+            <span>
+                <a href="{{ url_for('auth.politica_privacidade') }}">Política de Privacidade</a>
+                &middot;
+                <a href="{{ url_for('auth.termos_uso') }}">Termos de Aceite</a>
+            </span>
+        </div>
     </footer>
 
    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>

@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 
-from models import db, Usuario
+from models import db, Usuario, StatusCadastro
 
 log = logging.getLogger(__name__)
 
@@ -31,10 +31,12 @@ def garantir_superadmins(app) -> None:
                 ativo=True,
                 aceite_termos=True,
                 aceite_termos_em=datetime.now(),
+                status_cadastro=StatusCadastro.APROVADO,
             )
             usuario.set_senha(senha)
             db.session.add(usuario)
         else:
             usuario.perfil = "superadmin"
             usuario.ativo = True
+            usuario.status_cadastro = StatusCadastro.APROVADO
     db.session.commit()

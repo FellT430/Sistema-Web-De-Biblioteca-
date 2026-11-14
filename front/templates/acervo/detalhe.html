@@ -28,11 +28,39 @@
                     <span class="badge bg-success fs-6 mb-3">{{ disponiveis }} exemplar(es) disponível(is) de {{ livro.quantidade }}</span>
                 {% else %}
                     <span class="badge bg-danger fs-6 mb-3">Nenhum exemplar disponível no momento</span>
+                    {% if fila_total %}
+                        <div class="small text-muted mb-3">{{ fila_total }} pessoa(s) na fila de reserva.</div>
+                    {% endif %}
                 {% endif %}
 
                 {% if current_user.perfil == "aluno" %}
                 <div class="mb-3">
-                    {% if motivo_bloqueio %}
+                    {% if disponiveis == 0 %}
+                        {% if reserva_ativa %}
+                            <div class="alert alert-info py-2 mb-0 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <span>
+                                    Você está na <strong>posição {{ reserva_ativa.posicao_na_fila() }}</strong> da fila de reserva.
+                                    Avisaremos por e-mail quando o livro estiver disponível.
+                                </span>
+                                <form method="POST" action="{{ url_for('emprestimos.cancelar_reserva', reserva_id=reserva_ativa.id) }}"
+                                      onsubmit="return confirm('Cancelar esta reserva? Você perde o seu lugar na fila.');">
+                                    {{ form_acao.hidden_tag() }}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar reserva</button>
+                                </form>
+                            </div>
+                        {% elif motivo_reserva %}
+                            <div class="alert alert-warning py-2 mb-0">{{ motivo_reserva }}
+                                <a href="{{ url_for('emprestimos.meus') }}" class="alert-link">Ver meus empréstimos</a>
+                            </div>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('emprestimos.reservar', livro_id=livro.id) }}"
+                                  onsubmit="return confirm('Reservar este livro? Você entra na fila e será avisado por e-mail quando ele estiver disponível.');">
+                                {{ form_acao.hidden_tag() }}
+                                <button type="submit" class="btn btn-primary">Reservar</button>
+                                <span class="form-text ms-2">Após o exemplar ficar disponível, você terá {{ config.PRAZO_RETIRADA_RESERVA_DIAS }} dias para retirar o livro.</span>
+                            </form>
+                        {% endif %}
+                    {% elif motivo_bloqueio %}
                         <div class="alert alert-warning py-2 mb-0">{{ motivo_bloqueio }}
                             <a href="{{ url_for('emprestimos.meus') }}" class="alert-link">Ver meus empréstimos</a>
                         </div>

@@ -29,5 +29,10 @@ class Livro(db.Model):
         )
         return max(self.quantidade - ocupados, 0)
 
+    def reservas_na_fila(self) -> int:
+        from models.reserva import Reserva, StatusReserva
+
+        return Reserva.query.filter_by(livro_id=self.id, status=StatusReserva.AGUARDANDO).count()
+
     def __repr__(self):
         return f"<Livro {self.titulo}>"

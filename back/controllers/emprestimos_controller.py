@@ -2,11 +2,13 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 
-from models import db, Emprestimo, StatusEmprestimo, Livro, Usuario
+from models import db, Emprestimo, StatusEmprestimo, Livro, Usuario, Reserva, StatusReserva
 from forms import AcaoForm
 from decorators import perfil_requerido
 from services import emprestimos as servico
 from services.emprestimos import RegraEmprestimoError
+from services import reservas as servico_reservas
+from services.reservas import RegraReservaError
 from services.auditoria import registrar, Acoes
 from services.notificacoes import notificar_devolucao, verificar_e_notificar
 
@@ -65,10 +67,18 @@ def meus():
     em_aberto = [e for e in emprestimos if e.status not in StatusEmprestimo.FINAIS]
     historico = [e for e in emprestimos if e.status in StatusEmprestimo.FINAIS]
 
+    todas_reservas = (
+        Reserva.query.filter_by(aluno_id=current_user.id).order_by(Reserva.criada_em.desc()).all()
+    )
+    reservas = [r for r in todas_reservas if r.status == StatusReserva.AGUARDANDO] + [
+        r for r in todas_reservas if r.status != StatusReserva.AGUARDANDO
+    ]
+
     return render_template(
         "emprestimos/meus.html",
         em_aberto=em_aberto,
         historico=historico,
+        reservas=reservas,
         Status=StatusEmprestimo,
         form_acao=AcaoForm(),
     )
@@ -97,6 +107,52 @@ def cancelar(emprestimo_id):
 
     registrar(Acoes.EMPRESTIMO_CANCELADO, f"{_descricao(emprestimo)} cancelado pelo aluno")
     flash("Solicitação cancelada.", "info")
+    return redirect(url_for("emprestimos.meus"))
+
+
+@emprestimos_bp.route("/reservar/<int:livro_id>", methods=["POST"])
+@login_required
+@perfil_requerido("aluno")
+def reservar(livro_id):
+    _conferir_csrf()
+    livro = db.get_or_404(Livro, livro_id)
+
+    try:
+        servico_reservas.criar_reserva(current_user, livro)
+    except RegraReservaError as erro:
+        flash(str(erro), "danger")
+        return redirect(url_for("acervo.detalhe", livro_id=livro.id))
+
+    flash(
+        f"Reserva de \"{livro.titulo}\" feita! Você entrou na fila e será avisado por e-mail "
+        "quando o livro estiver disponível.",
+        "success",
+    )
+    return redirect(url_for("emprestimos.meus"))
+
+
+@emprestimos_bp.route("/reservas/<int:reserva_id>/cancelar", methods=["POST"])
+@login_required
+@perfil_requerido("aluno")
+def cancelar_reserva(reserva_id):
+    _conferir_csrf()
+    reserva = db.get_or_404(Reserva, reserva_id)
+
+    if reserva.aluno_id != current_user.id:
+        registrar(
+            Acoes.ACESSO_NEGADO,
+            f"Tentou cancelar a reserva #{reserva.id}, que pertence a outro aluno",
+            sucesso=False,
+        )
+        abort(403)
+
+    try:
+        servico_reservas.cancelar_reserva(reserva, current_user)
+    except RegraReservaError as erro:
+        flash(str(erro), "warning")
+        return redirect(url_for("emprestimos.meus"))
+
+    flash("Reserva cancelada.", "info")
     return redirect(url_for("emprestimos.meus"))
 
 

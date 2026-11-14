@@ -107,7 +107,7 @@ class LivroForm(FormularioBase):
             NumberRange(min=1, max=999, message="A quantidade deve estar entre 1 e 999."),
         ],
     )
-    sinopse = TextAreaField("Sinopse", validators=[Optional(), Length(max=2000)])
+    sinopse = TextAreaField("Sinopse", validators=[Optional(), Length(max=2500)])
     categoria = StringField("Categoria", validators=[Optional(), Length(max=150)])
     capa_url = HiddenField(validators=[Optional(), URL(message="URL de capa inválida."), Length(max=500)])
     google_books_id = HiddenField(validators=[Optional(), Length(max=50)])
@@ -155,20 +155,19 @@ class EsqueciSenhaForm(FormularioBase):
     )
 
 
-class AutorizarCadastroForm(FormularioBase):
-    email = StringField(
-        "E-mail institucional",
-        validators=[DataRequired(), Email(), Length(max=120)],
-        render_kw={"placeholder": "nome@aluno.com"},
+class SolicitarExclusaoForm(FormularioBase):
+    senha = PasswordField("Senha atual", validators=[DataRequired(message="Informe sua senha.")])
+
+
+class RecusarExclusaoForm(FormularioBase):
+    motivo = StringField(
+        "Motivo da recusa",
+        validators=[DataRequired(message="Informe o motivo."), Length(max=300)],
     )
 
-    def validate_email(self, campo):
-        from flask import current_app
-        dominios = current_app.config["DOMINIOS_PERFIL"]
-        dominio = campo.data.lower().strip().split("@")[-1]
-        if dominio not in dominios:
-            aceitos = ", ".join("@" + d for d in dominios)
-            raise ValidationError(f"Domínio não reconhecido. Use {aceitos}.")
+
+class ReenviarConfirmacaoForm(FormularioBase):
+    email = StringField("E-mail", validators=[DataRequired(), Email()])
 
 
 class CodigoRecuperacaoForm(FormularioBase):

@@ -3,11 +3,18 @@
 {% block titulo %}Cadastro - Livro +{% endblock %}
 
 {% block conteudo %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm mt-4">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">Criar conta</h3>
+{% from "_macros.html" import painel_lateral, botao_senha %}
+<div class="card shadow-sm auth-card">
+    <div class="row g-0">
+        {{ painel_lateral("Como funciona o cadastro",
+                          "Em três passos você passa a usar a biblioteca pelo LIVRO+.",
+                          ["1. Preencha seus dados", "2. Confirme o e-mail pelo link que enviaremos", "3. Aguarde a aprovação da administração"]) }}
+        <div class="col-lg-7">
+            <div class="auth-form">
+                <h3 class="mb-1">Criar conta</h3>
+                <p class="text-muted mb-4">
+                    Depois do cadastro, você confirma o e-mail e a administração aprova o seu acesso.
+                </p>
 
                 <form method="POST" novalidate>
                     {{ form.hidden_tag() }}
@@ -24,8 +31,7 @@
                         {{ form.email.label(class="form-label") }}
                         {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="nome@aluno.com") }}
                         <div class="form-text">
-                            Use o e-mail institucional liberado pela administração da biblioteca.
-                            Seu perfil é detectado automaticamente pelo domínio
+                            Use seu e-mail institucional. O perfil é detectado automaticamente pelo domínio
                             (@aluno.com, @professor.com ou @bibliotecaadm.com).
                         </div>
                         {% for erro in form.email.errors %}
@@ -36,17 +42,23 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             {{ form.senha.label(class="form-label") }}
-                            {{ form.senha(class="form-control" + (" is-invalid" if form.senha.errors else "")) }}
-                            {% for erro in form.senha.errors %}
-                                <div class="invalid-feedback">{{ erro }}</div>
-                            {% endfor %}
+                            <div class="campo-senha-wrap">
+                                {{ form.senha(class="form-control" + (" is-invalid" if form.senha.errors else "")) }}
+                                {{ botao_senha(form.senha.id) }}
+                                {% for erro in form.senha.errors %}
+                                    <div class="invalid-feedback">{{ erro }}</div>
+                                {% endfor %}
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             {{ form.confirmar_senha.label(class="form-label") }}
-                            {{ form.confirmar_senha(class="form-control" + (" is-invalid" if form.confirmar_senha.errors else "")) }}
-                            {% for erro in form.confirmar_senha.errors %}
-                                <div class="invalid-feedback">{{ erro }}</div>
-                            {% endfor %}
+                            <div class="campo-senha-wrap">
+                                {{ form.confirmar_senha(class="form-control" + (" is-invalid" if form.confirmar_senha.errors else "")) }}
+                                {{ botao_senha(form.confirmar_senha.id) }}
+                                {% for erro in form.confirmar_senha.errors %}
+                                    <div class="invalid-feedback">{{ erro }}</div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
 
@@ -63,7 +75,7 @@
                         {% endfor %}
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100">Cadastrar</button>
+                    <button type="submit" class="btn btn-primary w-100 py-2">Criar conta</button>
                 </form>
 
                 <p class="text-center mt-3 mb-0">
@@ -74,3 +86,8 @@
     </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/mostrar_senha.js') }}"></script>
+{% endblock %}
+

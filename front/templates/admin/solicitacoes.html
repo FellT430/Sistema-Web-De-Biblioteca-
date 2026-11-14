@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block titulo %}Solicitações de cadastro - Livro +{% endblock %}
+
+{% block conteudo %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="text-dark mb-0">Solicitações de cadastro</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.usuarios') }}" class="btn btn-light">Usuários</a>
+        <a href="{{ url_for('admin.painel') }}" class="btn btn-light">Voltar ao painel</a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3 {{ 'border-warning' if exclusoes }}">
+    <div class="card-body">
+        <h5 class="mb-1">Pedidos de exclusão de dados ({{ exclusoes | length }})</h5>
+        <p class="text-muted small mb-3">
+            Ao confirmar, a conta é anonimizada de forma
+            <strong>irreversível</strong>; o histórico de empréstimos é mantido sem identificação.
+            Quem tem livro em mãos não pode ser confirmado.
+        </p>
+        <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Pedido em</th><th class="text-end"></th></tr></thead>
+            <tbody>
+            {% for u in exclusoes %}
+            <tr>
+                <td>{{ u.nome }}</td>
+                <td class="text-break">{{ u.email }}</td>
+                <td><span class="badge bg-secondary">{{ u.perfil_nome }}</span></td>
+                <td class="small text-nowrap">{{ u.exclusao_solicitada_em.strftime("%d/%m/%Y %H:%M") }}</td>
+                <td class="text-end">
+                    {% if bloqueios_exclusao[u.id] %}
+                        <div class="small text-danger mb-1">{{ bloqueios_exclusao[u.id] }}</div>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('admin.confirmar_exclusao', usuario_id=u.id) }}" class="d-inline"
+                          onsubmit="return confirm('Anonimizar os dados de {{ u.nome }}? Esta ação é irreversível.');">
+                        {{ form_acao.hidden_tag() }}
+                        <button class="btn btn-sm btn-danger">Confirmar exclusão</button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('admin.recusar_exclusao', usuario_id=u.id) }}"
+                          class="d-inline-flex gap-1 mt-1">
+                        {{ form_recusa.hidden_tag() }}
+                        <input type="text" name="motivo" class="form-control form-control-sm" maxlength="300"
+                               placeholder="Motivo da recusa" required style="width: 14rem;">
+                        <button class="btn btn-sm btn-outline-secondary">Recusar</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted">Nenhum pedido de exclusão pendente.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <h5 class="mb-1">Aguardando aprovação ({{ aguardando_aprovacao | length }})</h5>
+        <p class="text-muted small mb-3">
+            Estas pessoas se cadastraram e já confirmaram o e-mail. Confira o nome e o perfil
+            (definido pelo domínio do e-mail) antes de aprovar.
+        </p>
+        <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>E-mail confirmado em</th><th class="text-end"></th></tr></thead>
+            <tbody>
+            {% for u in aguardando_aprovacao %}
+            <tr>
+                <td>{{ u.nome }}</td>
+                <td class="text-break">{{ u.email }}</td>
+                <td><span class="badge bg-secondary">{{ u.perfil_nome }}</span></td>
+                <td class="small text-nowrap">{{ u.email_confirmado_em.strftime("%d/%m/%Y %H:%M") if u.email_confirmado_em else "-" }}</td>
+                <td class="text-end text-nowrap">
+                    <form method="POST" action="{{ url_for('admin.aprovar_cadastro', usuario_id=u.id) }}" class="d-inline">
+                        {{ form_acao.hidden_tag() }}
+                        <button class="btn btn-sm btn-success">Aprovar</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.recusar_cadastro', usuario_id=u.id) }}" class="d-inline"
+                          onsubmit="return confirm('Recusar o cadastro de {{ u.nome }}?');">
+                        {{ form_acao.hidden_tag() }}
+                        <button class="btn btn-sm btn-outline-danger">Recusar</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted">Nenhuma solicitação aguardando aprovação.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="mb-1">Aguardando confirmação do e-mail ({{ aguardando_confirmacao | length }})</h5>
+                <p class="text-muted small mb-3">
+                    Ainda não clicaram no link enviado por e-mail. Só podem ser aprovados depois de confirmar.
+                </p>
+                <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>E-mail</th><th>Perfil</th><th>Cadastro</th><th class="text-end"></th></tr></thead>
+                    <tbody>
+                    {% for u in aguardando_confirmacao %}
+                    <tr>
+                        <td class="text-break">{{ u.email }}</td>
+                        <td><span class="badge bg-secondary">{{ u.perfil_nome }}</span></td>
+                        <td class="small text-nowrap">{{ u.criado_em.strftime("%d/%m/%Y %H:%M") if u.criado_em else "-" }}</td>
+                        <td class="text-end">
+                            <form method="POST" action="{{ url_for('admin.recusar_cadastro', usuario_id=u.id) }}"
+                                  onsubmit="return confirm('Recusar o cadastro de {{ u.email }}?');">
+                                {{ form_acao.hidden_tag() }}
+                                <button class="btn btn-sm btn-outline-danger">Recusar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-muted">Nenhum cadastro aguardando confirmação.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="mb-1">Recusados (últimos 20)</h5>
+                <p class="text-muted small mb-3">Se foi engano, ainda dá para aprovar.</p>
+                <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>E-mail</th><th>Perfil</th><th class="text-end"></th></tr></thead>
+                    <tbody>
+                    {% for u in recusados %}
+                    <tr>
+                        <td class="text-break">{{ u.email }}</td>
+                        <td><span class="badge bg-secondary">{{ u.perfil_nome }}</span></td>
+                        <td class="text-end">
+                            {% if u.email_confirmado_em %}
+                            <form method="POST" action="{{ url_for('admin.aprovar_cadastro', usuario_id=u.id) }}"
+                                  onsubmit="return confirm('Aprovar o cadastro de {{ u.nome }}?');">
+                                {{ form_acao.hidden_tag() }}
+                                <button class="btn btn-sm btn-outline-success">Aprovar</button>
+                            </form>
+                            {% else %}
+                            <span class="small text-muted">e-mail não confirmado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-muted">Nenhum cadastro recusado.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

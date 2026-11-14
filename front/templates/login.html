@@ -1,44 +1,69 @@
 {% extends "base.html" %}
 
 {% block titulo %}Login - Livro +{% endblock %}
+{% block classe_pagina %}pagina-login{% endblock %}
 
 {% block conteudo %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow-sm mt-4">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">Entrar</h3>
+{% from "_macros.html" import painel_lateral, icone %}
+<div class="card shadow-sm auth-card">
+    <div class="row g-0">
+        {{ painel_lateral("Sua biblioteca, conectada à sala de aula.",
+                          "Professores recomendam, alunos encontram e a biblioteca acompanha tudo em um só lugar.",
+                          ["Livros recomendados por disciplina", "Prazos e avisos de devolução", "Empréstimos de Livros"]) }}
+        <div class="col-lg-7">
+            <div class="auth-form">
+
+                <h3 class="mb-1">Bem-vindo de volta!</h3>
+                <p class="text-muted mb-4">Entre com seu e-mail institucional para continuar.</p>
 
                 <form method="POST" novalidate>
                     {{ form.hidden_tag() }}
 
                     <div class="mb-3">
                         {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
-                        {% for erro in form.email.errors %}
-                            <div class="invalid-feedback">{{ erro }}</div>
-                        {% endfor %}
+                        <div class="campo-icone">
+                            {{ icone("email", 18) }}
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="nome@aluno.com") }}
+                            {% for erro in form.email.errors %}
+                                <div class="invalid-feedback">{{ erro }}</div>
+                            {% endfor %}
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         {{ form.senha.label(class="form-label") }}
-                        {{ form.senha(class="form-control" + (" is-invalid" if form.senha.errors else "")) }}
-                        {% for erro in form.senha.errors %}
-                            <div class="invalid-feedback">{{ erro }}</div>
-                        {% endfor %}
+                        <div class="campo-icone campo-senha">
+                            {{ icone("cadeado", 18) }}
+                            {{ form.senha(class="form-control" + (" is-invalid" if form.senha.errors else ""), placeholder="Sua senha") }}
+                            <button type="button" class="btn-mostrar-senha" data-alvo="{{ form.senha.id }}"
+                                    aria-label="Mostrar senha" aria-pressed="false">
+                                <span class="icone-mostrar">{{ icone("olho", 18) }}</span>
+                                <span class="icone-ocultar d-none">{{ icone("olho-fechado", 18) }}</span>
+                            </button>
+                            {% for erro in form.senha.errors %}
+                                <div class="invalid-feedback">{{ erro }}</div>
+                            {% endfor %}
+                        </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                    <button type="submit" class="btn btn-destaque w-100 py-2 mt-1">Entrar {{ icone("seta", 18) }}</button>
                 </form>
 
                 <p class="text-center mt-3 mb-1">
                     Não tem conta? <a href="{{ url_for('auth.cadastro') }}">Cadastre-se</a>
                 </p>
-                <p class="text-center mb-0">
+                <p class="text-center mb-1">
                     <a href="{{ url_for('auth.esqueci_senha') }}">Esqueci minha senha</a>
+                </p>
+                <p class="text-center mb-0 small">
+                    <a href="{{ url_for('auth.reenviar_confirmacao') }}">Reenviar e-mail de confirmação</a>
                 </p>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/mostrar_senha.js') }}"></script>
 {% endblock %}

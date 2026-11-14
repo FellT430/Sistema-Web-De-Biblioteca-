@@ -3,6 +3,7 @@
 {% block titulo %}Meus Dados - Livro +{% endblock %}
 
 {% block conteudo %}
+{% from "_macros.html" import botao_senha %}
 <div class="row justify-content-center">
     <div class="col-md-7">
         <div class="card shadow-sm mt-4">
@@ -97,6 +98,28 @@
                 </div>
                 {% endif %}
 
+                {% if usuario.perfil != 'superadmin' %}
+                <div class="border border-danger-subtle rounded p-3 mb-4">
+                    <h5 class="mb-1">Exclusão dos meus dados</h5>
+                    <p class="text-muted small mb-2">
+                        Você pode pedir a exclusão dos seus dados pessoais A administração
+                        analisa o pedido em até 15 dias úteis
+                    </p>
+                    {% if usuario.exclusao_pendente %}
+                        <div class="alert alert-info py-2 mb-0">
+                            Pedido enviado em {{ usuario.exclusao_solicitada_em.strftime("%d/%m/%Y %H:%M") }}.
+                            Aguardando análise da administração.
+                        </div>
+                    {% elif motivo_exclusao %}
+                        <div class="alert alert-warning py-2 mb-0">{{ motivo_exclusao }}</div>
+                    {% else %}
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalExclusao">
+                            Solicitar exclusão dos meus dados
+                        </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 <div class="d-flex gap-2 flex-wrap">
                     <a href="{{ url_for('auth.dashboard') }}" class="btn btn-secondary btn-sm">&larr; Voltar</a>
                     <a href="{{ url_for('auth.politica_privacidade') }}" class="btn btn-outline-secondary btn-sm">Ver Política de Privacidade</a>
@@ -106,4 +129,37 @@
         </div>
     </div>
 </div>
+
+{% if usuario.perfil != 'superadmin' %}
+<div class="modal fade" id="modalExclusao" tabindex="-1" aria-labelledby="tituloExclusao" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('auth.solicitar_exclusao') }}" class="modal-content">
+            {{ form_exclusao.hidden_tag() }}
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloExclusao">Confirmar pedido de exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">
+                    Após a aprovação,você não poderá mais entrar
+                    com esta conta. Para confirmar que é você, digite sua senha atual.
+                </p>
+                <label for="senhaExclusao" class="form-label">Senha atual</label>
+                <div class="campo-senha-wrap">
+                    <input type="password" class="form-control" id="senhaExclusao" name="senha" required autocomplete="current-password">
+                    {{ botao_senha("senhaExclusao") }}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-danger">Solicitar exclusão</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/mostrar_senha.js') }}"></script>
 {% endblock %}
