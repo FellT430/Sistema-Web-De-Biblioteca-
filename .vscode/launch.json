@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "LIVRO+ (Flask)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/back/app.py",
+            "cwd": "${workspaceFolder}/back",
+            "console": "integratedTerminal"
+        }
+    ]
+}
