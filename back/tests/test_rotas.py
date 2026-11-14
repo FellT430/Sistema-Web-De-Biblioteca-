@@ -9,7 +9,7 @@ from models import (
 from services import privacidade
 
 
-# ---------------------------------------------------------------- Páginas públicas e proteção
+
 def test_paginas_publicas_abrem(client):
     for rota in ("/login", "/cadastro", "/politica-privacidade", "/termos-uso", "/esqueci-senha"):
         assert client.get(rota).status_code == 200, rota
@@ -31,7 +31,7 @@ def test_pagina_inexistente(client):
     assert client.get("/nao-existe").status_code == 404
 
 
-# ---------------------------------------------------------------- Cadastro e login
+
 def test_cadastro_com_dominio_de_aluno(client):
     resposta = client.post("/cadastro", data={
         "nome": "Maria Silva", "email": "maria@aluno.com", "senha": "Senha@123",
@@ -97,7 +97,7 @@ def test_paginas_do_usuario_logado(client, fabrica):
         assert resposta.status_code == 200, rota
 
 
-# ---------------------------------------------------------------- Fluxo de empréstimo pelo navegador
+
 def test_fluxo_completo_de_emprestimo(client, fabrica):
     aluno, bib = fabrica.usuario("aluno"), fabrica.usuario("admin")
     livro = fabrica.livro(quantidade=1)
@@ -157,7 +157,7 @@ def test_telas_do_bibliotecario(client, fabrica):
     client.post("/notificacoes/verificar-agora", follow_redirects=True)
 
 
-# ---------------------------------------------------------------- Livros
+
 def test_bibliotecario_cadastra_edita_e_exclui_livro(client, fabrica):
     fabrica.logar(client, fabrica.usuario("admin"))
     client.post("/livros/novo", data={"titulo": "Código Limpo", "autor": "Robert C. Martin",
@@ -187,7 +187,7 @@ def test_busca_google_books_sem_termo(client, fabrica):
     assert resposta.status_code == 400 and "erro" in resposta.get_json()
 
 
-# ---------------------------------------------------------------- Disciplinas e recomendações
+
 def test_professor_cria_disciplina_e_recomenda_livro(client, fabrica):
     professor = fabrica.usuario("professor")
     livro = fabrica.livro()
@@ -210,7 +210,7 @@ def test_professor_cria_disciplina_e_recomenda_livro(client, fabrica):
     assert not disciplina.possui_livro(livro)
 
 
-# ---------------------------------------------------------------- Administrador
+
 def test_admin_aprova_cadastro_somente_com_email_confirmado(client, fabrica):
     from datetime import datetime
     sem_confirmar = fabrica.usuario("aluno", status=StatusCadastro.AGUARDANDO_APROVACAO)
