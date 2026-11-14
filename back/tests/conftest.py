@@ -14,20 +14,19 @@ BACK_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BACK_DIR not in sys.path:
     sys.path.insert(0, BACK_DIR)
 
-# Variáveis de ambiente de teste ANTES de importar o config.
-# O load_dotenv não sobrescreve variáveis já definidas, então o .env real é ignorado.
+
 os.environ.update({
     "FLASK_DEBUG": "1",
     "SECRET_KEY": "chave-somente-para-testes",
-    "DATABASE_URL": "sqlite://",            # banco em memória
+    "DATABASE_URL": "sqlite://",            
     "SUPERADMIN_BRUNO_SENHA": "SenhaDeTeste@123",
     "SUPERADMIN_FELIPE_SENHA": "SenhaDeTeste@123",
-    "MAIL_SERVER": "",                      # nenhum e-mail real é enviado
+    "MAIL_SERVER": "",                     
     "GOOGLE_BOOKS_API_KEY": "",
-    "DESATIVAR_AGENDADOR": "1",             # sem tarefas em segundo plano
+    "DESATIVAR_AGENDADOR": "1",           
 })
 
-# Impede que os testes escrevam no logs/auditoria.log de verdade
+
 logging.getLogger("auditoria").addHandler(logging.NullHandler())
 
 from app import create_app  # noqa: E402
@@ -53,9 +52,7 @@ def client(app):
     return app.test_client()
 
 
-# ---------------------------------------------------------------------------
-# Fábricas de dados
-# ---------------------------------------------------------------------------
+
 _contador = {"n": 0}
 
 
@@ -113,7 +110,7 @@ def criar_disciplina(professor, nome="Algoritmos"):
 def logar(client, usuario):
     """Simula um usuário já autenticado (login + 2FA concluídos)."""
     from flask import g
-    g.pop("_login_user", None)  # o contexto da aplicação é compartilhado entre requisições nos testes
+    g.pop("_login_user", None)  
     with client.session_transaction() as sessao:
         sessao["_user_id"] = str(usuario.id)
         sessao["_fresh"] = True
