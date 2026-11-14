@@ -56,7 +56,7 @@ def test_confirmar_retirada_define_prazo_de_7_dias(app, fabrica):
 
 
 def test_confirmar_retirada_so_de_solicitacao(app, fabrica):
-    emprestimo = fabrica.emprestimo(fabrica.usuario(), fabrica.livro())  # já ATIVO
+    emprestimo = fabrica.emprestimo(fabrica.usuario(), fabrica.livro())  
     with pytest.raises(RegraEmprestimoError):
         emprestimos.confirmar_retirada(emprestimo, fabrica.usuario("admin"))
 
@@ -121,4 +121,4 @@ def test_atualizar_atrasos_marca_somente_vencidos(app, fabrica):
     db.session.refresh(vencido)
     db.session.refresh(no_dia)
     assert vencido.status == StatusEmprestimo.ATRASADO
-    assert no_dia.status == StatusEmprestimo.ATIVO  # vence hoje: ainda não está atrasado
+    assert no_dia.status == StatusEmprestimo.ATIVO  
