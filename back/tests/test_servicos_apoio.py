@@ -15,7 +15,7 @@ from services.auditoria import registrar, Acoes
 from services.google_books import GoogleBooksError
 
 
-# ---------------------------------------------------------------- 2FA
+
 def test_codigo_2fa_valido_e_invalido():
     segredo = dois_fatores.gerar_segredo()
     codigo = pyotp.TOTP(segredo, interval=30).now()
@@ -40,14 +40,13 @@ def test_qr_code_e_formatacao_do_segredo():
     assert dois_fatores.formatar_segredo("ABCDEFGH") == "ABCD EFGH"
 
 
-# ---------------------------------------------------------------- Códigos de recuperação
 def test_codigos_de_recuperacao_uso_unico(app, fabrica):
     usuario = fabrica.usuario()
     codigos = codigos_recuperacao.gerar(usuario)
     assert len(codigos) == 8 and codigos_recuperacao.total(usuario) == 8
-    assert codigos_recuperacao.usar(usuario, codigos[0].lower())  # aceita minúsculas
+    assert codigos_recuperacao.usar(usuario, codigos[0].lower())  
     assert codigos_recuperacao.restantes(usuario) == 7
-    assert not codigos_recuperacao.usar(usuario, codigos[0])      # não reutiliza
+    assert not codigos_recuperacao.usar(usuario, codigos[0])     
     assert not codigos_recuperacao.usar(usuario, "curto")
     assert not codigos_recuperacao.usar(usuario, "ZZZZ-ZZZZ")
 
@@ -60,7 +59,7 @@ def test_gerar_de_novo_substitui_os_codigos(app, fabrica):
     assert not codigos_recuperacao.usar(usuario, antigos[0])
 
 
-# ---------------------------------------------------------------- E-mail
+
 def test_token_de_confirmacao_ida_e_volta(app, fabrica):
     usuario = fabrica.usuario(status=StatusCadastro.AGUARDANDO_CONFIRMACAO)
     with app.test_request_context():
@@ -104,7 +103,7 @@ def test_falha_no_smtp_nao_quebra_o_sistema(app):
         assert envio_email.enviar("maria@aluno.com", "Assunto", ["Olá"]) is False
 
 
-# ---------------------------------------------------------------- Google Books
+
 def _resposta_google():
     return {"items": [{
         "id": "abc123",
@@ -125,9 +124,9 @@ def test_busca_google_books_normaliza_os_dados(app):
         livros = google_books.buscar_livros("python")
     livro = livros[0]
     assert livro["titulo"] == "Python Fluente"
-    assert livro["isbn"] == "9788575224625"          # prefere ISBN-13
+    assert livro["isbn"] == "9788575224625"          
     assert livro["ano_publicacao"] == 2015
-    assert livro["capa_url"].startswith("https://")  # força HTTPS
+    assert livro["capa_url"].startswith("https://")  
     assert livro["categoria"].startswith("Computação") or livro["categoria"]
 
 
@@ -150,7 +149,6 @@ def test_google_books_resposta_invalida(app):
             google_books.buscar_livros("python")
 
 
-# ---------------------------------------------------------------- Auditoria
 def test_auditoria_registra_acao(app, fabrica):
     usuario = fabrica.usuario()
     registrar(Acoes.LOGIN_SUCESSO, "Login realizado", usuario=usuario)
@@ -165,7 +163,7 @@ def test_auditoria_registra_ip_dentro_de_requisicao(app):
     assert log.ip == "10.0.0.7" and log.rota == "/login" and not log.sucesso
 
 
-# ---------------------------------------------------------------- Painel e agendador
+
 def test_painel_do_bibliotecario(app, fabrica):
     hoje = date.today()
     livro = fabrica.livro(quantidade=3)
@@ -175,7 +173,7 @@ def test_painel_do_bibliotecario(app, fabrica):
     painel = dashboard_bibliotecario.montar_painel(hoje)
     assert isinstance(painel, dict)
     texto = str(painel)
-    assert livro.titulo in texto  # aparece entre os mais emprestados/atrasos
+    assert livro.titulo in texto 
 
 
 def test_verificacao_do_agendador(app, fabrica):
