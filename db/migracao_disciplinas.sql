@@ -1,8 +1,3 @@
--- Migração: disciplinas (RF10) e recomendações (RF11)
--- O app.py já cria essas tabelas sozinho ao iniciar (db.create_all() cria
--- tabelas novas). Este script é só para quem preferir criar manualmente no
--- MySQL Workbench, ou para documentar a estrutura no TCC.
-
 CREATE TABLE IF NOT EXISTS disciplinas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(120) NOT NULL,
@@ -15,8 +10,6 @@ CREATE TABLE IF NOT EXISTS disciplinas (
         FOREIGN KEY (professor_id) REFERENCES usuarios (id) ON DELETE CASCADE
 );
 
--- Ligação muitos-para-muitos entre disciplinas e livros (RN31).
--- A chave primária composta impede o mesmo livro duas vezes na disciplina (RN34).
 CREATE TABLE IF NOT EXISTS disciplina_livros (
     disciplina_id INT NOT NULL,
     livro_id INT NOT NULL,

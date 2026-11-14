@@ -1,33 +1,48 @@
 {% extends "base.html" %}
+{% from "_macros.html" import icone %}
 
 {% block titulo %}Painel - Livro +{% endblock %}
 
-{% block conteudo %}
-<div class="card shadow-sm">
-    <div class="card-body p-4">
-        <h3>Bem-vindo(a), {{ usuario.nome }}!</h3>
-        <p class="text-muted">
-            Perfil: <span class="badge bg-primary text-uppercase">{{ usuario.perfil_nome }}</span>
-        </p>
+{% macro atalho(url, titulo, texto, nome_icone, principal=False, extra="") -%}
+<div class="col-12 col-md-6 col-xl-3">
+    <a href="{{ url }}" class="card shadow-sm atalho {{ 'atalho-principal' if principal }}">
+        <div class="kpi-icone">{{ icone(nome_icone, 22) }}</div>
+        <div>
+            <h6>{{ titulo }} {{ extra | safe }}</h6>
+            <p>{{ texto }}</p>
+        </div>
+    </a>
+</div>
+{%- endmacro %}
 
-        {% if usuario.perfil == "aluno" %}
-            <p>Consulte o acervo, veja os livros recomendados pelos professores e solicite empréstimos.</p>
-            <a href="{{ url_for('recomendacoes.listar') }}" class="btn btn-primary">Livros recomendados</a>
-            <a href="{{ url_for('acervo.listar') }}" class="btn btn-outline-primary">Consultar acervo</a>
-            <a href="{{ url_for('emprestimos.meus') }}" class="btn btn-outline-primary">Meus empréstimos</a>
-            <a href="{{ url_for('notificacoes.listar') }}" class="btn btn-outline-primary">
-                Notificações{% if notificacoes_nao_lidas %} <span class="badge bg-danger">{{ notificacoes_nao_lidas }}</span>{% endif %}
-            </a>
-        {% elif usuario.perfil == "professor" %}
-            <p>Cadastre suas disciplinas, relacione livros e recomende leituras aos alunos.</p>
-            <a href="{{ url_for('disciplinas.listar') }}" class="btn btn-primary">Minhas disciplinas</a>
-            <a href="{{ url_for('recomendacoes.listar') }}" class="btn btn-outline-primary">Ver recomendações publicadas</a>
-            <a href="{{ url_for('acervo.listar') }}" class="btn btn-outline-primary">Consultar acervo</a>
-        {% elif usuario.perfil == "admin" %}
-            <p>Aqui o administrador poderá gerenciar o acervo, empréstimos e usuários do sistema.</p>
-            <a href="{{ url_for('livros.listar') }}" class="btn btn-primary">Gerenciar livros</a>
-            <a href="{{ url_for('emprestimos.gerenciar') }}" class="btn btn-primary">Empréstimos</a>
-        {% endif %}
-    </div>
+{% block conteudo %}
+<div class="boas-vindas">
+    <span class="badge text-uppercase mb-2">{{ usuario.perfil_nome }}</span>
+    <h2>Olá, {{ usuario.nome.split(' ')[0] }}!</h2>
+    {% if usuario.perfil == "aluno" %}
+    <p>Veja os livros que seus professores recomendaram, consulte o acervo e acompanhe os prazos dos seus empréstimos.</p>
+    {% elif usuario.perfil == "professor" %}
+    <p>Relacione livros do acervo às suas disciplinas e recomende leituras para os seus alunos.</p>
+    {% else %}
+    <p>Gerencie o acervo e os empréstimos da biblioteca.</p>
+    {% endif %}
+</div>
+
+<h6 class="text-muted text-uppercase small mb-3">O que você quer fazer?</h6>
+<div class="row g-3">
+    {% if usuario.perfil == "aluno" %}
+        {{ atalho(url_for('recomendacoes.listar'), "Livros recomendados", "Leituras indicadas pelos professores, por disciplina.", "estrela", True) }}
+        {{ atalho(url_for('acervo.listar'), "Consultar acervo", "Busque livros e veja a disponibilidade.", "busca") }}
+        {{ atalho(url_for('emprestimos.meus'), "Meus empréstimos", "Solicitações, prazos e devoluções.", "troca") }}
+        {{ atalho(url_for('notificacoes.listar'), "Notificações", "Avisos de prazo e de atraso.", "sino", False,
+                  ('<span class="badge bg-danger">' ~ notificacoes_nao_lidas ~ '</span>') if notificacoes_nao_lidas else "") }}
+    {% elif usuario.perfil == "professor" %}
+        {{ atalho(url_for('disciplinas.listar'), "Minhas disciplinas", "Cadastre disciplinas e relacione livros.", "camadas", True) }}
+        {{ atalho(url_for('recomendacoes.listar'), "Recomendações", "Veja as leituras já recomendadas.", "estrela") }}
+        {{ atalho(url_for('acervo.listar'), "Consultar acervo", "Busque livros disponíveis na biblioteca.", "busca") }}
+    {% elif usuario.perfil == "admin" %}
+        {{ atalho(url_for('livros.listar'), "Gerenciar livros", "Cadastre, edite e remova livros do acervo.", "livro", True) }}
+        {{ atalho(url_for('emprestimos.gerenciar'), "Empréstimos", "Confirme retiradas e registre devoluções.", "troca") }}
+    {% endif %}
 </div>
 {% endblock %}

@@ -5,11 +5,11 @@ from flask import Blueprint, render_template, redirect, url_for, flash, abort, r
 from flask_login import login_required, current_user
 from sqlalchemy import func
 
-from models import db, Usuario, LogAuditoria, CadastroAutorizado
-from forms import AcaoAdminForm, AutorizarCadastroForm
+from models import db, Usuario, LogAuditoria, StatusCadastro
+from forms import AcaoAdminForm, RecusarExclusaoForm
 from decorators import perfil_requerido
 from services.auditoria import registrar, Acoes
-from services import codigos_recuperacao
+from services import codigos_recuperacao, envio_email, privacidade
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -24,6 +24,9 @@ def _conferir_csrf():
 
 def _alvo(usuario_id):
     usuario = db.get_or_404(Usuario, usuario_id)
+    if usuario.anonimizado:
+        flash("Esta conta foi anonimizada (LGPD) e não pode mais ser alterada.", "warning")
+        return None
     if usuario.id == current_user.id:
         flash("Você não pode executar esta ação na sua própria conta.", "warning")
         return None
@@ -51,6 +54,8 @@ def painel():
     )
     painel = {
         "data_atualizacao": agora,
+        "data_hoje": agora.strftime("%Y-%m-%d"),
+        "data_ontem": (agora - timedelta(days=1)).strftime("%Y-%m-%d"),
         "total_usuarios": sum(por_perfil.values()),
         "por_perfil": [
             ("Alunos", por_perfil.get("aluno", 0)),
@@ -59,8 +64,10 @@ def painel():
             ("Administradores", por_perfil.get("superadmin", 0)),
         ],
         "inativos": Usuario.query.filter_by(ativo=False).count(),
-        "autorizacoes_pendentes": CadastroAutorizado.query.filter(CadastroAutorizado.usado_em.is_(None)).count(),
-        "sem_2fa": Usuario.query.filter_by(dois_fatores_ativo=False).count(),
+        "solicitacoes_pendentes": Usuario.query.filter_by(
+            status_cadastro=StatusCadastro.AGUARDANDO_APROVACAO).count(),
+        "sem_2fa": Usuario.query.filter_by(
+            dois_fatores_ativo=False, status_cadastro=StatusCadastro.APROVADO).count(),
         "logins_hoje": LogAuditoria.query.filter(
             LogAuditoria.acao == "LOGIN_SUCESSO", LogAuditoria.criado_em >= inicio_dia
         ).count(),
@@ -88,6 +95,8 @@ def usuarios():
         consulta = consulta.filter(Usuario.ativo.is_(True))
     elif filtros["situacao"] == "inativos":
         consulta = consulta.filter(Usuario.ativo.is_(False))
+    elif filtros["situacao"] == "pendentes":
+        consulta = consulta.filter(Usuario.status_cadastro != StatusCadastro.APROVADO)
     if filtros["q"]:
         termo = f"%{filtros['q']}%"
         consulta = consulta.filter((Usuario.nome.ilike(termo)) | (Usuario.email.ilike(termo)))
@@ -104,59 +113,116 @@ def usuarios():
     )
 
 
-@admin_bp.route("/autorizacoes", methods=["GET", "POST"])
+@admin_bp.route("/solicitacoes")
 @login_required
 @perfil_requerido("superadmin")
-def autorizacoes():
-    form = AutorizarCadastroForm()
-    if form.validate_on_submit():
-        email = form.email.data.lower().strip()
-        perfil = current_app.config["DOMINIOS_PERFIL"][email.split("@")[-1]]
-        if Usuario.query.filter_by(email=email).first():
-            form.email.errors.append("Este e-mail já possui conta no sistema.")
-        elif CadastroAutorizado.query.filter_by(email=email).first():
-            form.email.errors.append("Este e-mail já está liberado para cadastro.")
-        else:
-            autorizacao = CadastroAutorizado(email=email, perfil=perfil, autorizado_por_id=current_user.id)
-            db.session.add(autorizacao)
-            db.session.commit()
-            nome_perfil = Usuario.NOMES_PERFIL.get(perfil, perfil)
-            registrar(Acoes.CADASTRO_AUTORIZADO, f"Cadastro liberado para {email} (perfil {nome_perfil})")
-            flash(
-                f"Cadastro liberado para {email} ({nome_perfil}). Agora a pessoa já pode "
-                "acessar a tela de cadastro e criar a própria senha.",
-                "success",
-            )
-            return redirect(url_for("admin.autorizacoes"))
-
-    pendentes = (
-        CadastroAutorizado.query.filter(CadastroAutorizado.usado_em.is_(None))
-        .order_by(CadastroAutorizado.criado_em.desc()).all()
+def solicitacoes():
+    aguardando_aprovacao = (
+        Usuario.query.filter_by(status_cadastro=StatusCadastro.AGUARDANDO_APROVACAO)
+        .order_by(Usuario.email_confirmado_em).all()
     )
-    usadas = (
-        CadastroAutorizado.query.filter(CadastroAutorizado.usado_em.isnot(None))
-        .order_by(CadastroAutorizado.usado_em.desc()).limit(20).all()
+    aguardando_confirmacao = (
+        Usuario.query.filter_by(status_cadastro=StatusCadastro.AGUARDANDO_CONFIRMACAO)
+        .order_by(Usuario.criado_em.desc()).all()
     )
+    recusados = (
+        Usuario.query.filter_by(status_cadastro=StatusCadastro.RECUSADO)
+        .order_by(Usuario.criado_em.desc()).limit(20).all()
+    )
+    exclusoes = privacidade.pendentes()
     return render_template(
-        "admin/autorizacoes.html", form=form, pendentes=pendentes, usadas=usadas, form_acao=AcaoAdminForm(),
+        "admin/solicitacoes.html",
+        aguardando_aprovacao=aguardando_aprovacao,
+        aguardando_confirmacao=aguardando_confirmacao,
+        recusados=recusados,
+        exclusoes=exclusoes,
+        bloqueios_exclusao={u.id: privacidade._motivo_bloqueio(u) for u in exclusoes},
+        form_acao=AcaoAdminForm(),
+        form_recusa=RecusarExclusaoForm(),
     )
 
 
-@admin_bp.route("/autorizacoes/<int:autorizacao_id>/revogar", methods=["POST"])
+@admin_bp.route("/exclusoes/<int:usuario_id>/confirmar", methods=["POST"])
 @login_required
 @perfil_requerido("superadmin")
-def revogar_autorizacao(autorizacao_id):
+def confirmar_exclusao(usuario_id):
     _conferir_csrf()
-    autorizacao = db.get_or_404(CadastroAutorizado, autorizacao_id)
-    if not autorizacao.pendente:
-        flash("Este cadastro já foi concluído. Para bloquear o acesso, desative o usuário.", "warning")
-        return redirect(url_for("admin.autorizacoes"))
-    email = autorizacao.email
-    db.session.delete(autorizacao)
+    usuario = db.get_or_404(Usuario, usuario_id)
+    try:
+        privacidade.confirmar_exclusao(usuario, current_user)
+    except privacidade.RegraPrivacidadeError as erro:
+        flash(str(erro), "warning")
+    else:
+        flash("Dados anonimizados. O usuário foi avisado por e-mail antes da exclusão.", "success")
+    return redirect(url_for("admin.solicitacoes"))
+
+
+@admin_bp.route("/exclusoes/<int:usuario_id>/recusar", methods=["POST"])
+@login_required
+@perfil_requerido("superadmin")
+def recusar_exclusao(usuario_id):
+    form = RecusarExclusaoForm()
+    if not form.validate_on_submit():
+        flash("Informe o motivo da recusa (até 300 caracteres).", "danger")
+        return redirect(url_for("admin.solicitacoes"))
+    usuario = db.get_or_404(Usuario, usuario_id)
+    try:
+        privacidade.recusar_exclusao(usuario, form.motivo.data, current_user)
+    except privacidade.RegraPrivacidadeError as erro:
+        flash(str(erro), "warning")
+    else:
+        flash("Pedido de exclusão recusado. O usuário foi avisado por e-mail.", "info")
+    return redirect(url_for("admin.solicitacoes"))
+
+
+@admin_bp.route("/solicitacoes/<int:usuario_id>/aprovar", methods=["POST"])
+@login_required
+@perfil_requerido("superadmin")
+def aprovar_cadastro(usuario_id):
+    _conferir_csrf()
+    usuario = db.get_or_404(Usuario, usuario_id)
+
+    if usuario.status_cadastro not in (StatusCadastro.AGUARDANDO_APROVACAO, StatusCadastro.RECUSADO):
+        flash(f"{usuario.nome} não está aguardando aprovação ({usuario.status_cadastro_nome}).", "warning")
+        return redirect(url_for("admin.solicitacoes"))
+    if usuario.email_confirmado_em is None:
+        flash(f"{usuario.nome} ainda não confirmou o e-mail e não pode ser aprovado.", "warning")
+        return redirect(url_for("admin.solicitacoes"))
+
+    usuario.status_cadastro = StatusCadastro.APROVADO
+    usuario.aprovado_em = datetime.now()
+    usuario.aprovado_por_id = current_user.id
     db.session.commit()
-    registrar(Acoes.AUTORIZACAO_REVOGADA, f"Liberação de cadastro cancelada para {email}")
-    flash(f"Liberação de cadastro de {email} cancelada.", "success")
-    return redirect(url_for("admin.autorizacoes"))
+    registrar(Acoes.CADASTRO_APROVADO, f"Cadastro de {usuario.email} ({usuario.perfil_nome}) aprovado")
+
+    if envio_email.enviar_aprovacao(usuario):
+        flash(f"Cadastro de {usuario.nome} aprovado. Enviamos um e-mail avisando que já pode entrar.", "success")
+    else:
+        registrar(Acoes.EMAIL_FALHA_ENVIO, f"Falha ao enviar o aviso de aprovação para {usuario.email}", sucesso=False)
+        flash(f"Cadastro de {usuario.nome} aprovado, mas o e-mail de aviso não pôde ser enviado.", "warning")
+    return redirect(url_for("admin.solicitacoes"))
+
+
+@admin_bp.route("/solicitacoes/<int:usuario_id>/recusar", methods=["POST"])
+@login_required
+@perfil_requerido("superadmin")
+def recusar_cadastro(usuario_id):
+    _conferir_csrf()
+    usuario = db.get_or_404(Usuario, usuario_id)
+
+    if usuario.status_cadastro not in (StatusCadastro.AGUARDANDO_APROVACAO, StatusCadastro.AGUARDANDO_CONFIRMACAO):
+        flash(f"{usuario.nome} não está com o cadastro pendente ({usuario.status_cadastro_nome}).", "warning")
+        return redirect(url_for("admin.solicitacoes"))
+
+    email_confirmado = usuario.status_cadastro == StatusCadastro.AGUARDANDO_APROVACAO
+    usuario.status_cadastro = StatusCadastro.RECUSADO
+    db.session.commit()
+    registrar(Acoes.CADASTRO_REPROVADO, f"Cadastro de {usuario.email} ({usuario.perfil_nome}) recusado")
+
+    if email_confirmado:
+        envio_email.enviar_reprovacao(usuario)
+    flash(f"Cadastro de {usuario.nome} recusado.", "info")
+    return redirect(url_for("admin.solicitacoes"))
 
 
 @admin_bp.route("/usuarios/<int:usuario_id>/desativar", methods=["POST"])

@@ -24,6 +24,7 @@
                     <th>Editora</th>
                     <th>Ano</th>
                     <th>Qtd.</th>
+                    <th>Fila de reservas</th>
                     <th class="text-end">Ações</th>
                 </tr>
             </thead>
@@ -43,6 +44,14 @@
                     <td>{{ livro.editora or "-" }}</td>
                     <td>{{ livro.ano_publicacao or "-" }}</td>
                     <td>{{ livro.quantidade }}</td>
+                    <td>
+                        {% set fila = livro.reservas_na_fila() %}
+                        {% if fila %}
+                            <span class="badge bg-warning text-dark">{{ fila }} na fila</span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
                     <td class="text-end">
                         <a href="{{ url_for('livros.editar', livro_id=livro.id) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
                         <form action="{{ url_for('livros.excluir', livro_id=livro.id) }}" method="POST" class="d-inline"

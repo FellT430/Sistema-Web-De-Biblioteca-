@@ -1,20 +1,17 @@
 import os
 from dotenv import load_dotenv
 
-# override=False (padrão): variáveis já definidas no servidor têm prioridade
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def env(nome, padrao=None):
-    """Lê variável de ambiente. Vazia conta como não definida."""
     valor = os.getenv(nome)
     return valor if valor else padrao
 
 
 def env_obrigatoria(nome):
-    """Lê variável obrigatória; para o sistema se não existir."""
     valor = os.getenv(nome)
     if not valor:
         raise RuntimeError(f"Variável de ambiente obrigatória não definida: {nome}")
@@ -29,12 +26,9 @@ def env_bool(nome, padrao=False):
 
 
 class Config:
-    # ---------- Aplicação ----------
     DEBUG = env_bool("FLASK_DEBUG", False)
     SECRET_KEY = env_obrigatoria("SECRET_KEY")
 
-    # ---------- Banco de dados ----------
-    # Em desenvolvimento (DEBUG) aceita SQLite local; em produção é obrigatório
     if DEBUG:
         SQLALCHEMY_DATABASE_URI = env(
             "DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'app.db')}"
@@ -45,7 +39,6 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_recycle": 280, "pool_pre_ping": True}
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # ---------- Perfis e regras de negócio (fixas no código) ----------
     PERFIS_VALIDOS = ["superadmin", "admin", "professor", "aluno"]
 
     DOMINIOS_PERFIL = {
@@ -57,21 +50,30 @@ class Config:
     PRAZO_DEVOLUCAO_DIAS = 7
     MAX_EMPRESTIMOS_POR_ALUNO = 3
 
-    # ---------- Super admins ----------
-    # E-mails ficam no código; as senhas vêm do ambiente
+    MAX_RESERVAS_POR_ALUNO = 3
+    PRAZO_RETIRADA_RESERVA_DIAS = 2
+
     SUPERADMINS = [
         {"nome": "Bruno", "email": "bruno@livromais.com", "variavel_senha": "SUPERADMIN_BRUNO_SENHA"},
         {"nome": "Felipe", "email": "felipe@livromais.com", "variavel_senha": "SUPERADMIN_FELIPE_SENHA"},
     ]
-    # Garante que nenhum super admin seja criado com senha vazia
     for _admin in SUPERADMINS:
         env_obrigatoria(_admin["variavel_senha"])
 
-    # ---------- LGPD ----------
     CONTATO_EMAIL = env("CONTATO_EMAIL", "contato@livromais.com")
 
-    # ---------- Google Books ----------
     GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes"
     GOOGLE_BOOKS_API_KEY = env("GOOGLE_BOOKS_API_KEY", "")
+
+    MAIL_SERVER = env("MAIL_SERVER")
+    MAIL_PORT = int(env("MAIL_PORT", "2525"))
+    MAIL_USE_TLS = env_bool("MAIL_USE_TLS", True)
+    MAIL_USERNAME = env("MAIL_USERNAME")
+    MAIL_PASSWORD = env("MAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = env("MAIL_DEFAULT_SENDER", "nao-responda@livromais.com")
+
+    APP_URL = env("APP_URL", "http://127.0.0.1:5000")
+
+    HORAS_VALIDADE_CONFIRMACAO = 48
 
     WTF_I18N_ENABLED = False

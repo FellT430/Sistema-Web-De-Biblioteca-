@@ -12,14 +12,22 @@ _agendador = None
 
 def executar_verificacao(app) -> dict:
     from services.notificacoes import verificar_e_notificar
+    from services.reservas import expirar_reservas
 
     with app.app_context():
         resumo = verificar_e_notificar()
+        reservas = expirar_reservas()
+        resumo["reservas_expiradas"] = reservas["expiradas"]
+        resumo["reservas_atendidas"] = reservas["atendidas"]
+        resumo["emails_enviados"] += reservas["emails_enviados"]
         registrar(
             Acoes.VERIFICACAO_ATRASOS,
             "Verificação automática: "
             f"{resumo['novos_atrasos']} empréstimo(s) marcado(s) como atrasado, "
-            f"{resumo['lembretes']} lembrete(s) e {resumo['avisos_atraso']} aviso(s) de atraso enviados",
+            f"{resumo['lembretes']} lembrete(s) e {resumo['avisos_atraso']} aviso(s) de atraso registrados; "
+            f"{resumo['reservas_expiradas']} reserva(s) expirada(s), "
+            f"{resumo['reservas_atendidas']} reserva(s) atendida(s) na fila; "
+            f"{resumo['emails_enviados']} e-mail(s) enviado(s)",
             email="agendador@sistema",
         )
         return resumo

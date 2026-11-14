@@ -6,6 +6,20 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models import db
 
 
+class StatusCadastro:
+    AGUARDANDO_CONFIRMACAO = "AGUARDANDO_CONFIRMACAO"
+    AGUARDANDO_APROVACAO = "AGUARDANDO_APROVACAO"
+    APROVADO = "APROVADO"
+    RECUSADO = "RECUSADO"
+
+    NOMES = {
+        AGUARDANDO_CONFIRMACAO: "Aguardando confirmação do e-mail",
+        AGUARDANDO_APROVACAO: "Aguardando aprovação",
+        APROVADO: "Aprovado",
+        RECUSADO: "Recusado",
+    }
+
+
 class Usuario(UserMixin, db.Model):
 
     __tablename__ = "usuarios"
@@ -25,6 +39,17 @@ class Usuario(UserMixin, db.Model):
     totp_secret = db.Column(db.String(64), nullable=True)
     totp_ultimo_passo = db.Column(db.BigInteger, nullable=True)
 
+    status_cadastro = db.Column(
+        db.String(30), nullable=False,
+        default=StatusCadastro.APROVADO, server_default=StatusCadastro.APROVADO,
+    )
+    email_confirmado_em = db.Column(db.DateTime, nullable=True)
+    aprovado_em = db.Column(db.DateTime, nullable=True)
+    aprovado_por_id = db.Column(db.Integer, nullable=True)
+
+    exclusao_solicitada_em = db.Column(db.DateTime, nullable=True)
+    anonimizado_em = db.Column(db.DateTime, nullable=True)
+
     NOMES_PERFIL = {
         "superadmin": "Admin",
         "admin": "Bibliotecário",
@@ -35,6 +60,22 @@ class Usuario(UserMixin, db.Model):
     @property
     def perfil_nome(self) -> str:
         return self.NOMES_PERFIL.get(self.perfil, self.perfil)
+
+    @property
+    def aprovado(self) -> bool:
+        return self.status_cadastro == StatusCadastro.APROVADO
+
+    @property
+    def status_cadastro_nome(self) -> str:
+        return StatusCadastro.NOMES.get(self.status_cadastro, self.status_cadastro)
+
+    @property
+    def anonimizado(self) -> bool:
+        return self.anonimizado_em is not None
+
+    @property
+    def exclusao_pendente(self) -> bool:
+        return self.exclusao_solicitada_em is not None and self.anonimizado_em is None
 
     @property
     def is_superadmin(self) -> bool:

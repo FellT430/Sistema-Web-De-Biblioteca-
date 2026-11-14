@@ -62,7 +62,9 @@ def verificar_agora():
     flash(
         "Verificação executada: "
         f"{resumo['novos_atrasos']} empréstimo(s) marcado(s) como atrasado, "
-        f"{resumo['lembretes']} lembrete(s) e {resumo['avisos_atraso']} aviso(s) de atraso enviados aos alunos.",
+        f"{resumo['lembretes']} lembrete(s) e {resumo['avisos_atraso']} aviso(s) de atraso registrados; "
+        f"{resumo['reservas_expiradas']} reserva(s) expirada(s); "
+        f"{resumo['emails_enviados']} e-mail(s) enviado(s) aos alunos.",
         "success",
     )
     return redirect(url_for("emprestimos.gerenciar", filtro="andamento"))

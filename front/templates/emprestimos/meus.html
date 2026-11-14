@@ -70,6 +70,57 @@
     </div>
 </div>
 
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h5 class="mb-3">Minhas reservas</h5>
+        {% if reservas %}
+        <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Livro</th>
+                    <th>Reservado em</th>
+                    <th>Posição na fila</th>
+                    <th>Situação</th>
+                    <th class="text-end"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reservas %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('acervo.detalhe', livro_id=r.livro.id) }}" class="fw-semibold">{{ r.livro.titulo }}</a>
+                        <div class="small text-muted">{{ r.livro.autor }}</div>
+                    </td>
+                    <td>{{ r.criada_em.strftime("%d/%m/%Y") }}</td>
+                    <td>
+                        {% if r.status == "AGUARDANDO" %}
+                            <strong>{{ r.posicao_na_fila() }}º</strong>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>{% include "emprestimos/_status_reserva.html" %}</td>
+                    <td class="text-end">
+                        {% if r.status == "AGUARDANDO" %}
+                        <form method="POST" action="{{ url_for('emprestimos.cancelar_reserva', reserva_id=r.id) }}" class="d-inline"
+                              onsubmit="return confirm('Cancelar esta reserva? Você perde o seu lugar na fila.');">
+                            {{ form_acao.hidden_tag() }}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Você não tem reservas. Quando um livro estiver sem exemplares, use o botão "Reservar" na página dele.</p>
+        {% endif %}
+    </div>
+</div>
+
 {% if historico %}
 <div class="card shadow-sm">
     <div class="card-body p-4">

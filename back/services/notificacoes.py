@@ -1,7 +1,12 @@
+import logging
 from datetime import date, timedelta
+from functools import partial
 
 from models import db, Emprestimo, StatusEmprestimo, Notificacao, TipoNotificacao
 from services.emprestimos import atualizar_atrasos
+from services import envio_email
+
+_log = logging.getLogger("notificacoes")
 
 
 def _ja_notificado(emprestimo, tipo, dia) -> bool:
@@ -26,10 +31,22 @@ def _notificar(emprestimo, tipo, mensagem, dia) -> bool:
     return True
 
 
+def _enviar_emails(pendentes) -> int:
+    enviados = 0
+    for envio in pendentes:
+        try:
+            if envio():
+                enviados += 1
+        except Exception:
+            _log.exception("Falha ao enviar e-mail de notificação de empréstimo")
+    return enviados
+
+
 def verificar_e_notificar(hoje=None) -> dict:
     hoje = hoje or date.today()
     novos_atrasos = atualizar_atrasos(hoje)
     lembretes = avisos_atraso = 0
+    pendentes = []
 
     vencendo = Emprestimo.query.filter(
         Emprestimo.status == StatusEmprestimo.ATIVO,
@@ -43,6 +60,7 @@ def verificar_e_notificar(hoje=None) -> dict:
         )
         if _notificar(emprestimo, TipoNotificacao.PRAZO_PROXIMO, mensagem, hoje):
             lembretes += 1
+            pendentes.append(partial(envio_email.enviar_lembrete_prazo, emprestimo, hoje))
 
     atrasados = Emprestimo.query.filter(Emprestimo.status == StatusEmprestimo.ATRASADO).all()
     for emprestimo in atrasados:
@@ -53,9 +71,16 @@ def verificar_e_notificar(hoje=None) -> dict:
         )
         if _notificar(emprestimo, TipoNotificacao.ATRASO, mensagem, hoje):
             avisos_atraso += 1
+            pendentes.append(partial(envio_email.enviar_aviso_atraso, emprestimo, dias))
 
     db.session.commit()
-    return {"novos_atrasos": novos_atrasos, "lembretes": lembretes, "avisos_atraso": avisos_atraso}
+    emails_enviados = _enviar_emails(pendentes)
+    return {
+        "novos_atrasos": novos_atrasos,
+        "lembretes": lembretes,
+        "avisos_atraso": avisos_atraso,
+        "emails_enviados": emails_enviados,
+    }
 
 
 def notificar_devolucao(emprestimo) -> None:
@@ -68,6 +93,7 @@ def notificar_devolucao(emprestimo) -> None:
         )
     if _notificar(emprestimo, TipoNotificacao.DEVOLUCAO_REGISTRADA, mensagem, hoje):
         db.session.commit()
+        _enviar_emails([partial(envio_email.enviar_devolucao, emprestimo)])
 
 
 def nao_lidas(usuario) -> int:

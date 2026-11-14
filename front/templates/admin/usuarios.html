@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h2 class="text-dark mb-0">Usuários</h2>
     <div class="d-flex gap-2">
-        <a href="{{ url_for('admin.autorizacoes') }}" class="btn btn-primary">Liberar cadastro</a>
+        <a href="{{ url_for('admin.solicitacoes') }}" class="btn btn-primary">Solicitações de cadastro</a>
         <a href="{{ url_for('admin.painel') }}" class="btn btn-light">Voltar ao painel</a>
     </div>
 </div>
@@ -33,6 +33,7 @@
                     <option value="">Todas</option>
                     <option value="ativos" {{ 'selected' if filtros.situacao == 'ativos' }}>Ativos</option>
                     <option value="inativos" {{ 'selected' if filtros.situacao == 'inativos' }}>Desativados</option>
+                    <option value="pendentes" {{ 'selected' if filtros.situacao == 'pendentes' }}>Cadastro pendente</option>
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-2">
@@ -65,16 +66,21 @@
                 <td class="text-break">{{ u.email }}</td>
                 <td><span class="badge {{ 'bg-warning text-dark' if u.perfil == 'superadmin' else 'bg-secondary' }}">{{ u.perfil_nome }}</span></td>
                 <td>
-                    {% if u.ativo %}<span class="badge bg-success">Ativo</span>
+                    {% if u.anonimizado %}<span class="badge bg-dark">Anonimizado</span>
+                    {% elif not u.aprovado %}<span class="badge {{ 'bg-danger' if u.status_cadastro == 'RECUSADO' else 'bg-warning text-dark' }}">{{ u.status_cadastro_nome }}</span>
+                    {% elif u.ativo %}<span class="badge bg-success">Ativo</span>
                     {% else %}<span class="badge bg-danger">Desativado</span>{% endif %}
                 </td>
                 <td>
-                    {% if u.dois_fatores_ativo %}<span class="badge bg-success">Configurado</span>
+                    {% if u.anonimizado %}<span class="text-muted">-</span>
+                    {% elif u.dois_fatores_ativo %}<span class="badge bg-success">Configurado</span>
                     {% else %}<span class="badge bg-secondary">Pendente</span>{% endif %}
                 </td>
                 <td class="small text-nowrap">{{ u.criado_em.strftime("%d/%m/%Y") if u.criado_em else "-" }}</td>
                 <td class="text-end pe-3">
-                    {% if u.id == current_user.id %}
+                    {% if u.anonimizado %}
+                        <span class="text-muted small">Sem ações</span>
+                    {% elif u.id == current_user.id %}
                         <span class="text-muted small">Sua conta</span>
                     {% else %}
                     <div class="dropdown">
@@ -127,5 +133,5 @@
         </div>
     </div>
 </div>
-<p class="text-light small mt-2">Contas de Administrador não podem ser desativadas. Nenhuma conta é excluída: desativar preserva o histórico.</p>
+<p class="text-muted small mt-2">Contas de Administrador não podem ser desativadas. Nenhuma conta é excluída: desativar preserva o histórico.</p>
 {% endblock %}

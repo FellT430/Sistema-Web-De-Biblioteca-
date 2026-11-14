@@ -85,6 +85,8 @@ def create_app():
     with app.app_context():
         db.create_all()
         _adicionar_colunas_2fa()
+        _adicionar_colunas_cadastro()
+        _adicionar_colunas_anonimizacao()
         garantir_superadmins(app)
 
     iniciar_agendador(app)
@@ -105,10 +107,36 @@ def _adicionar_colunas_2fa():
                 conexao.execute(text(f"ALTER TABLE usuarios ADD COLUMN {nome} {tipo}"))
 
 
+def _adicionar_colunas_cadastro():
+    colunas_existentes = {c["name"] for c in inspect(db.engine).get_columns("usuarios")}
+    novas_colunas = {
+        "status_cadastro": "VARCHAR(30) NOT NULL DEFAULT 'APROVADO'",
+        "email_confirmado_em": "DATETIME NULL",
+        "aprovado_em": "DATETIME NULL",
+        "aprovado_por_id": "INTEGER NULL",
+    }
+    with db.engine.begin() as conexao:
+        for nome, tipo in novas_colunas.items():
+            if nome not in colunas_existentes:
+                conexao.execute(text(f"ALTER TABLE usuarios ADD COLUMN {nome} {tipo}"))
+
+
+def _adicionar_colunas_anonimizacao():
+    colunas_existentes = {c["name"] for c in inspect(db.engine).get_columns("usuarios")}
+    novas_colunas = {
+        "exclusao_solicitada_em": "DATETIME NULL",
+        "anonimizado_em": "DATETIME NULL",
+    }
+    with db.engine.begin() as conexao:
+        for nome, tipo in novas_colunas.items():
+            if nome not in colunas_existentes:
+                conexao.execute(text(f"ALTER TABLE usuarios ADD COLUMN {nome} {tipo}"))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     usuario = db.session.get(Usuario, int(user_id))
-    if usuario is None or not usuario.ativo:
+    if usuario is None or not usuario.ativo or not usuario.aprovado:
         return None
     return usuario
 

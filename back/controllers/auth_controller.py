@@ -4,14 +4,14 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, current_app, session, abort
 from flask_login import login_user, logout_user, login_required, current_user
 
-from models import db, Usuario, LogAuditoria, CadastroAutorizado
+from models import db, Usuario, LogAuditoria, StatusCadastro
 from forms import (
     LoginForm, CadastroForm, CodigoDoisFatoresForm, AcaoAdminForm, EsqueciSenhaForm,
-    CodigoRecuperacaoForm, ConfirmarCodigosForm,
+    CodigoRecuperacaoForm, ConfirmarCodigosForm, ReenviarConfirmacaoForm, SolicitarExclusaoForm,
 )
 from decorators import perfil_requerido
 from services.auditoria import registrar, Acoes
-from services import dois_fatores, dashboard_bibliotecario, codigos_recuperacao
+from services import dois_fatores, dashboard_bibliotecario, codigos_recuperacao, envio_email, privacidade
 from services.notificacoes import verificar_e_notificar
 
 auth_bp = Blueprint("auth", __name__)
@@ -36,6 +36,9 @@ def index():
 
 @auth_bp.route("/cadastro", methods=["GET", "POST"])
 def cadastro():
+    if current_user.is_authenticated:
+        return redirect(url_for("auth.dashboard"))
+
     form = CadastroForm()
 
     if form.validate_on_submit():
@@ -49,7 +52,11 @@ def cadastro():
                 email=email_normalizado,
                 sucesso=False,
             )
-            flash("Este e-mail já está cadastrado.", "danger")
+            flash(
+                "Este e-mail já está cadastrado. Se você ainda não confirmou o e-mail, "
+                "use a opção \"Reenviar e-mail de confirmação\" na tela de login.",
+                "danger",
+            )
             return render_template("cadastro.html", form=form)
 
         perfil_detectado = detectar_perfil_pelo_email(email_normalizado)
@@ -67,47 +74,120 @@ def cadastro():
             )
             return render_template("cadastro.html", form=form)
 
-        autorizacao = CadastroAutorizado.query.filter_by(email=email_normalizado, usado_em=None).first()
-        if autorizacao is None:
-            registrar(
-                Acoes.CADASTRO_RECUSADO,
-                "Tentativa de cadastro com e-mail não autorizado pelo Administrador",
-                email=email_normalizado,
-                sucesso=False,
-            )
-            flash(
-                "Este e-mail ainda não foi liberado para cadastro. "
-                "Procure a administração da biblioteca.",
-                "danger",
-            )
-            return render_template("cadastro.html", form=form)
-
         novo_usuario = Usuario(
             nome=form.nome.data.strip(),
             email=email_normalizado,
             perfil=perfil_detectado,
             aceite_termos=bool(form.aceite_termos.data),
             aceite_termos_em=datetime.now(),
+            status_cadastro=StatusCadastro.AGUARDANDO_CONFIRMACAO,
         )
         novo_usuario.set_senha(form.senha.data)
-
         db.session.add(novo_usuario)
-        autorizacao.usado_em = datetime.now()
         db.session.commit()
 
         registrar(
             Acoes.CADASTRO_USUARIO,
-            f"Novo usuário cadastrado com perfil {novo_usuario.perfil_nome} (cadastro autorizado; aceite de termos registrado)",
+            f"Novo cadastro com perfil {novo_usuario.perfil_nome}, aguardando confirmação do e-mail "
+            "(aceite de termos registrado)",
             usuario=novo_usuario,
         )
-
-        flash(
-            f"Cadastro realizado com sucesso como {novo_usuario.perfil_nome.lower()}! Faça login para continuar.",
-            "success",
-        )
+        _enviar_link_confirmacao(novo_usuario)
         return redirect(url_for("auth.login"))
 
     return render_template("cadastro.html", form=form)
+
+
+def _enviar_link_confirmacao(usuario):
+    if envio_email.enviar_confirmacao(usuario):
+        registrar(Acoes.EMAIL_CONFIRMACAO_ENVIADO, "Link de confirmação de e-mail enviado", usuario=usuario)
+        flash(
+            f"Cadastro recebido! Enviamos um link de confirmação para {usuario.email}. "
+            "Confirme o e-mail para seu cadastro seguir para aprovação.",
+            "success",
+        )
+    else:
+        registrar(
+            Acoes.EMAIL_FALHA_ENVIO,
+            "Não foi possível enviar o link de confirmação (exibido no terminal do servidor)",
+            usuario=usuario,
+            sucesso=False,
+        )
+        flash(
+            "Cadastro recebido, mas não foi possível enviar o e-mail de confirmação agora. "
+            "Tente \"Reenviar e-mail de confirmação\" na tela de login em alguns minutos.",
+            "warning",
+        )
+
+
+@auth_bp.route("/confirmar-email/<token>")
+def confirmar_email(token):
+    dados, erro = envio_email.ler_token_confirmacao(token)
+    if erro:
+        if erro == "expirado":
+            flash("Este link de confirmação expirou. Peça um novo link abaixo.", "warning")
+        else:
+            flash("Link de confirmação inválido. Peça um novo link abaixo.", "danger")
+        return redirect(url_for("auth.reenviar_confirmacao"))
+
+    usuario = db.session.get(Usuario, dados.get("id"))
+    if usuario is None or usuario.email != dados.get("email"):
+        flash("Link de confirmação inválido. Peça um novo link abaixo.", "danger")
+        return redirect(url_for("auth.reenviar_confirmacao"))
+
+    if usuario.status_cadastro == StatusCadastro.AGUARDANDO_CONFIRMACAO:
+        usuario.status_cadastro = StatusCadastro.AGUARDANDO_APROVACAO
+        usuario.email_confirmado_em = datetime.now()
+        db.session.commit()
+        registrar(Acoes.EMAIL_CONFIRMADO, "E-mail confirmado; cadastro aguardando aprovação", usuario=usuario)
+        flash(
+            "E-mail confirmado! Agora seu cadastro será analisado pela administração. "
+            "Você receberá um e-mail quando puder entrar.",
+            "success",
+        )
+    else:
+        flash(f"Este e-mail já foi confirmado. Situação do cadastro: {usuario.status_cadastro_nome}.", "info")
+
+    return redirect(url_for("auth.login"))
+
+
+MAX_REENVIOS_CONFIRMACAO = 3
+JANELA_REENVIO_MINUTOS = 15
+
+
+@auth_bp.route("/reenviar-confirmacao", methods=["GET", "POST"])
+def reenviar_confirmacao():
+    if current_user.is_authenticated:
+        return redirect(url_for("auth.dashboard"))
+
+    form = ReenviarConfirmacaoForm()
+    if form.validate_on_submit():
+        email = form.email.data.lower().strip()
+        usuario = Usuario.query.filter_by(email=email).first()
+
+        limite = datetime.now() - timedelta(minutes=JANELA_REENVIO_MINUTOS)
+        envios_recentes = LogAuditoria.query.filter(
+            LogAuditoria.acao == Acoes.EMAIL_CONFIRMACAO_ENVIADO,
+            LogAuditoria.usuario_email == email,
+            LogAuditoria.criado_em >= limite,
+        ).count()
+
+        if (usuario and usuario.status_cadastro == StatusCadastro.AGUARDANDO_CONFIRMACAO
+                and envios_recentes < MAX_REENVIOS_CONFIRMACAO):
+            if envio_email.enviar_confirmacao(usuario):
+                registrar(Acoes.EMAIL_CONFIRMACAO_ENVIADO, "Link de confirmação reenviado", usuario=usuario)
+            else:
+                registrar(Acoes.EMAIL_FALHA_ENVIO, "Falha ao reenviar o link de confirmação",
+                          usuario=usuario, sucesso=False)
+
+        flash(
+            "Se este e-mail tiver um cadastro aguardando confirmação, enviamos um novo link. "
+            "Confira sua caixa de entrada e o spam.",
+            "info",
+        )
+        return redirect(url_for("auth.login"))
+
+    return render_template("reenviar_confirmacao.html", form=form)
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -122,6 +202,28 @@ def login():
         usuario = Usuario.query.filter_by(email=email_informado).first()
 
         if usuario and usuario.checar_senha(form.senha.data):
+            if not usuario.aprovado:
+                mensagens = {
+                    StatusCadastro.AGUARDANDO_CONFIRMACAO: (
+                        "Confirme seu e-mail antes de entrar. Procure o link na sua caixa de entrada "
+                        "ou use \"Reenviar e-mail de confirmação\".", "warning"),
+                    StatusCadastro.AGUARDANDO_APROVACAO: (
+                        "Seu e-mail já foi confirmado e o cadastro está aguardando aprovação da "
+                        "administração. Você receberá um e-mail quando puder entrar.", "info"),
+                    StatusCadastro.RECUSADO: (
+                        "Seu cadastro não foi aprovado. Procure a administração da biblioteca.", "danger"),
+                }
+                texto, categoria = mensagens.get(
+                    usuario.status_cadastro, ("Seu cadastro ainda não foi liberado.", "warning"))
+                registrar(
+                    Acoes.LOGIN_BLOQUEADO,
+                    f"Senha correta, mas o cadastro não está aprovado ({usuario.status_cadastro_nome})",
+                    usuario=usuario,
+                    sucesso=False,
+                )
+                flash(texto, categoria)
+                return render_template("login.html", form=form)
+
             if usuario.ativo:
                 session.pop(SESSAO_2FA_PENDENTE, None)
                 session[SESSAO_2FA_PENDENTE] = {
@@ -163,7 +265,7 @@ def login_2fa():
 
     usuario = db.session.get(Usuario, pendente["usuario_id"])
     expirado = int(time.time()) - pendente["inicio"] > TEMPO_MAX_2FA_SEGUNDOS
-    if usuario is None or not usuario.ativo or expirado:
+    if usuario is None or not usuario.ativo or not usuario.aprovado or expirado:
         session.pop(SESSAO_2FA_PENDENTE, None)
         flash("Sua verificação expirou. Faça login novamente.", "warning")
         return redirect(url_for("auth.login"))
@@ -278,7 +380,7 @@ def login_recuperacao():
 
     usuario = db.session.get(Usuario, pendente["usuario_id"])
     expirado = int(time.time()) - pendente["inicio"] > TEMPO_MAX_2FA_SEGUNDOS
-    if usuario is None or not usuario.ativo or expirado or not usuario.dois_fatores_ativo:
+    if usuario is None or not usuario.ativo or not usuario.aprovado or expirado or not usuario.dois_fatores_ativo:
         session.pop(SESSAO_2FA_PENDENTE, None)
         flash("Sua verificação expirou. Faça login novamente.", "warning")
         return redirect(url_for("auth.login"))
@@ -426,7 +528,51 @@ def meus_dados():
         codigos_restantes=codigos_recuperacao.restantes(current_user),
         codigos_total=codigos_recuperacao.total(current_user),
         form_acao=AcaoAdminForm(),
+        form_exclusao=SolicitarExclusaoForm(),
+        motivo_exclusao=privacidade._motivo_bloqueio(current_user),
     )
+
+
+MAX_FALHAS_EXCLUSAO = 5
+
+
+@auth_bp.route("/meus-dados/solicitar-exclusao", methods=["POST"])
+@login_required
+def solicitar_exclusao():
+    form = SolicitarExclusaoForm()
+    if not form.validate_on_submit():
+        flash("Informe sua senha para confirmar o pedido de exclusão.", "danger")
+        return redirect(url_for("auth.meus_dados"))
+
+    limite = datetime.now() - timedelta(minutes=JANELA_FALHAS_MINUTOS)
+    falhas = LogAuditoria.query.filter(
+        LogAuditoria.acao == Acoes.EXCLUSAO_SOLICITADA,
+        LogAuditoria.sucesso.is_(False),
+        LogAuditoria.usuario_id == current_user.id,
+        LogAuditoria.criado_em >= limite,
+    ).count()
+    if falhas >= MAX_FALHAS_EXCLUSAO:
+        flash(f"Muitas tentativas com senha incorreta. Aguarde {JANELA_FALHAS_MINUTOS} minutos.", "danger")
+        return redirect(url_for("auth.meus_dados"))
+
+    if not current_user.checar_senha(form.senha.data):
+        registrar(Acoes.EXCLUSAO_SOLICITADA, "Pedido de exclusão recusado: senha incorreta", sucesso=False)
+        flash("Senha incorreta. O pedido de exclusão não foi registrado.", "danger")
+        return redirect(url_for("auth.meus_dados"))
+
+    try:
+        privacidade.solicitar_exclusao(current_user)
+    except privacidade.RegraPrivacidadeError as erro:
+        registrar(Acoes.EXCLUSAO_SOLICITADA, f"Pedido de exclusão não aceito: {erro}", sucesso=False)
+        flash(str(erro), "warning")
+        return redirect(url_for("auth.meus_dados"))
+
+    flash(
+        "Pedido de exclusão registrado! A administração vai analisar e você receberá "
+        "um e-mail com a decisão.",
+        "success",
+    )
+    return redirect(url_for("auth.meus_dados"))
 
 
 @auth_bp.route("/politica-privacidade")

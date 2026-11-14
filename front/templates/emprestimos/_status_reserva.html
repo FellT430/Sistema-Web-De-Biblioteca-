@@ -1,0 +1,13 @@
+{% if r.status == "AGUARDANDO" %}
+    <span class="badge bg-warning text-dark">Na fila</span>
+{% elif r.status == "ATENDIDA" %}
+    <span class="badge bg-success">Atendida</span>
+    {% if r.emprestimo and r.emprestimo.status == "SOLICITADO" %}
+        <div class="small text-muted">Retire na biblioteca (veja em "Em andamento")</div>
+    {% endif %}
+{% elif r.status == "EXPIRADA" %}
+    <span class="badge bg-secondary">Expirada</span>
+    <div class="small text-muted">Livro não retirado no prazo</div>
+{% elif r.status == "CANCELADA" %}
+    <span class="badge bg-secondary">Cancelada</span>
+{% endif %}

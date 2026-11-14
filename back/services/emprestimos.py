@@ -9,6 +9,12 @@ class RegraEmprestimoError(Exception):
     pass
 
 
+def _liberar_exemplar(livro) -> None:
+    from services.reservas import atender_proxima_reserva
+
+    atender_proxima_reserva(livro)
+
+
 def atualizar_atrasos(hoje=None) -> int:
     hoje = hoje or date.today()
     vencidos = Emprestimo.query.filter(
@@ -77,6 +83,7 @@ def cancelar_solicitacao(emprestimo, aluno) -> None:
         raise RegraEmprestimoError("Só é possível cancelar solicitações que ainda não foram retiradas.")
     emprestimo.status = StatusEmprestimo.CANCELADO
     db.session.commit()
+    _liberar_exemplar(emprestimo.livro)
 
 
 def confirmar_retirada(emprestimo, bibliotecario) -> None:
@@ -103,6 +110,7 @@ def recusar_solicitacao(emprestimo, bibliotecario) -> None:
     emprestimo.status = StatusEmprestimo.CANCELADO
     emprestimo.bibliotecario_id = bibliotecario.id
     db.session.commit()
+    _liberar_exemplar(emprestimo.livro)
 
 
 def registrar_devolucao(emprestimo, bibliotecario) -> None:
@@ -113,3 +121,4 @@ def registrar_devolucao(emprestimo, bibliotecario) -> None:
     emprestimo.data_devolucao = datetime.now()
     emprestimo.bibliotecario_devolucao_id = bibliotecario.id
     db.session.commit()
+    _liberar_exemplar(emprestimo.livro)
