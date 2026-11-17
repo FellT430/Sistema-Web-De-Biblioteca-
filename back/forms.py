@@ -119,12 +119,12 @@ class AcaoForm(FormularioBase):
 
 class DisciplinaForm(FormularioBase):
     nome = StringField(
-        "Nome da disciplina",
+        "Nome da disciplina Completo",
         validators=[DataRequired(message="Informe o nome da disciplina."), Length(min=2, max=120)],
     )
     codigo = StringField("Código (opcional)", validators=[Optional(), Length(max=20)])
     descricao = TextAreaField(
-        "Curso / turma / descrição (opcional)", validators=[Optional(), Length(max=1000)]
+        "Curso / turma / descrição (Obrigatório)", validators=[DataRequired(message="Informe a descrição da disciplina."), Length(max=1000)]
     )
 
 

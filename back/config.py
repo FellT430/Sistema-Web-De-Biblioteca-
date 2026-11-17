@@ -54,8 +54,8 @@ class Config:
     PRAZO_RETIRADA_RESERVA_DIAS = 2
 
     SUPERADMINS = [
-        {"nome": "Bruno", "email": "bruno@livromais.com", "variavel_senha": "SUPERADMIN_BRUNO_SENHA"},
-        {"nome": "Felipe", "email": "felipe@livromais.com", "variavel_senha": "SUPERADMIN_FELIPE_SENHA"},
+        {"nome": "Bruno", "email": "admin1@livromais.com", "variavel_senha": "SUPERADMIN1_SENHA"},
+        {"nome": "Felipe", "email": "admin2@livromais.com", "variavel_senha": "SUPERADMIN2_SENHA"},
     ]
     for _admin in SUPERADMINS:
         env_obrigatoria(_admin["variavel_senha"])
