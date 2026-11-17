@@ -9,6 +9,20 @@
     <a href="{{ url_for('auth.dashboard') }}" class="btn btn-light">Voltar</a>
 </div>
 
+<form method="get" action="{{ url_for('recomendacoes.listar') }}" class="card shadow-sm mb-4">
+    <div class="card-body p-3">
+        <label for="busca-disciplina" class="form-label small text-muted mb-1">Buscar por disciplina</label>
+        <div class="input-group">
+            <input type="search" id="busca-disciplina" name="q" value="{{ busca }}" class="form-control"
+                   placeholder="Nome ou código da disciplina" maxlength="100">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if busca %}
+                <a href="{{ url_for('recomendacoes.listar') }}" class="btn btn-light border">Limpar</a>
+            {% endif %}
+        </div>
+    </div>
+</form>
+
 {% if por_disciplina %}
     {% for disciplina, recomendacoes in por_disciplina.items() %}
     <div class="card shadow-sm mb-4">
@@ -54,7 +68,11 @@
 {% else %}
     <div class="card shadow-sm">
         <div class="card-body p-4">
-            <p class="text-muted mb-0">Ainda não há livros recomendados pelos professores.</p>
+            {% if busca %}
+                <p class="text-muted mb-0">Nenhuma recomendação encontrada para a disciplina "{{ busca }}".</p>
+            {% else %}
+                <p class="text-muted mb-0">Ainda não há livros recomendados pelos professores.</p>
+            {% endif %}
         </div>
     </div>
 {% endif %}

@@ -148,8 +148,8 @@ Substitua cada `${...}` por um valor real. Exemplo para uso local (valores fict√
 SECRET_KEY=troque-por-uma-chave-longa-e-aleatoria
 FLASK_DEBUG=True
 DATABASE_URL=mysql+pymysql://root:SUA_SENHA@localhost:3306/livro_mais
-SUPERADMIN_BRUNO_SENHA=defina-uma-senha-forte
-SUPERADMIN_FELIPE_SENHA=defina-uma-senha-forte
+SUPERADMIN1_SENHA=${SUPERADMIN1_SENHA}
+SUPERADMIN2_SENHA=${SUPERADMIN2_SENHA}
 MAIL_SERVER=sandbox.smtp.mailtrap.io
 MAIL_PORT=2525
 MAIL_USERNAME=usuario-do-mailtrap
