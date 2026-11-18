@@ -9,7 +9,7 @@
         {% if notificacoes_nao_lidas %}
         <form method="POST" action="{{ url_for('notificacoes.marcar_todas') }}" class="d-inline">
             {{ form_acao.hidden_tag() }}
-            <button type="submit" class="btn btn-outline-light me-2">Marcar todas como lidas</button>
+             <button type="submit" class="btn btn-light me-2">Marcar todas como lidas</button>
         </form>
         {% endif %}
         <a href="{{ url_for('emprestimos.meus') }}" class="btn btn-light">Meus empréstimos</a>

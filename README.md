@@ -186,7 +186,7 @@ No VS Code também é possível iniciar com **F5** (configuração “LIVRO+ (Fl
 
 ## Primeiro acesso
 
-1. Entre com uma conta de administrador do sistema: `bruno@livromais.com` ou `felipe@livromais.com`, com a senha definida no `.env`. As contas são criadas automaticamente quando o sistema inicia.
+1. Entre com uma conta de administrador do sistema: `admin1@livromais.com` ou `admin2@livromais.com`, com a senha definida no `.env`. As contas são criadas automaticamente quando o sistema inicia.
 2. No primeiro login, escaneie o QR Code com o Google Authenticator e guarde os códigos de recuperação exibidos.
 3. Para criar outros usuários, acesse **Cadastre-se** com um e-mail de domínio válido (`@aluno.com`, `@professor.com` ou `@bibliotecaadm.com`), confirme o e-mail pelo link recebido (na caixa do Mailtrap ou no terminal) e aprove o cadastro em **Painel do administrador → Solicitações de cadastro**.
 

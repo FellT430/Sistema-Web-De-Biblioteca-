@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h2 class="mb-0">Logs de auditoria</h2>
     <div>
-        <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline-light btn-sm">Voltar ao painel</a>
+        <a href="{{ url_for('auth.dashboard') }}" class="btn btn-light btn-sm">Voltar ao painel</a>
         <a href="{{ url_for('auditoria.exportar_csv', **filtros) }}" class="btn btn-light btn-sm">Exportar CSV</a>
     </div>
 </div>

@@ -1,8 +1,3 @@
-"""Configuração compartilhada dos testes automatizados do LIVRO+.
-
-Cada teste roda com um banco SQLite em memória criado do zero, sem enviar
-e-mails reais (MAIL_SERVER vazio), sem agendador e sem acessar a internet.
-"""
 import logging
 import os
 import sys
@@ -19,8 +14,8 @@ os.environ.update({
     "FLASK_DEBUG": "1",
     "SECRET_KEY": "chave-somente-para-testes",
     "DATABASE_URL": "sqlite://",            
-    "SUPERADMIN_BRUNO_SENHA": "SenhaDeTeste@123",
-    "SUPERADMIN_FELIPE_SENHA": "SenhaDeTeste@123",
+    "SUPERADMIN1_SENHA": "SenhaDeTeste@123",
+    "SUPERADMIN2_SENHA": "SenhaDeTeste@123",
     "MAIL_SERVER": "",                     
     "GOOGLE_BOOKS_API_KEY": "",
     "DESATIVAR_AGENDADOR": "1",           
@@ -29,8 +24,8 @@ os.environ.update({
 
 logging.getLogger("auditoria").addHandler(logging.NullHandler())
 
-from app import create_app  # noqa: E402
-from models import (  # noqa: E402
+from app import create_app
+from models import (
     db, Usuario, StatusCadastro, Livro, Emprestimo, StatusEmprestimo, Disciplina,
 )
 
@@ -108,7 +103,6 @@ def criar_disciplina(professor, nome="Algoritmos"):
 
 
 def logar(client, usuario):
-    """Simula um usuário já autenticado (login + 2FA concluídos)."""
     from flask import g
     g.pop("_login_user", None)  
     with client.session_transaction() as sessao:
@@ -118,7 +112,6 @@ def logar(client, usuario):
 
 @pytest.fixture
 def fabrica():
-    """Dá acesso às fábricas dentro dos testes: fabrica.usuario(...), fabrica.livro(...)."""
     class Fabrica:
         usuario = staticmethod(criar_usuario)
         livro = staticmethod(criar_livro)

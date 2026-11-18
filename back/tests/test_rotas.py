@@ -1,5 +1,3 @@
-"""Testes de integração das rotas: front-end (templates), back-end (controllers) e banco
-trabalhando juntos, do jeito que o usuário usa pelo navegador."""
 from datetime import date, timedelta
 
 from models import (
@@ -72,7 +70,7 @@ def test_link_de_confirmacao_libera_para_aprovacao(app, client, fabrica):
 def test_login_com_senha_errada(client, fabrica):
     usuario = fabrica.usuario()
     resposta = client.post("/login", data={"email": usuario.email, "senha": "errada"})
-    assert b"inv" in resposta.data  # "E-mail ou senha inválidos."
+    assert b"inv" in resposta.data
     assert LogAuditoria.query.filter_by(sucesso=False).count() >= 1
 
 
@@ -193,7 +191,7 @@ def test_professor_cria_disciplina_e_recomenda_livro(client, fabrica):
     livro = fabrica.livro()
     fabrica.logar(client, professor)
     assert client.get("/disciplinas/nova").status_code == 200
-    client.post("/disciplinas/nova", data={"nome": "Estrutura de Dados", "codigo": "ED1"})
+    client.post("/disciplinas/nova", data={"nome": "Estrutura de Dados", "codigo": "ED1", "descricao": "Sistemas de Informação - 3º semestre"})
     disciplina = Disciplina.query.filter_by(nome="Estrutura de Dados").one()
 
     assert client.get(f"/disciplinas/{disciplina.id}").status_code == 200
@@ -201,7 +199,7 @@ def test_professor_cria_disciplina_e_recomenda_livro(client, fabrica):
     db.session.refresh(disciplina)
     assert disciplina.possui_livro(livro)
 
-    client.post(f"/disciplinas/{disciplina.id}/editar", data={"nome": "Estrutura de Dados II"})
+    client.post(f"/disciplinas/{disciplina.id}/editar", data={"nome": "Estrutura de Dados II", "descricao": "Sistemas de Informação - 3º semestre"})
     db.session.refresh(disciplina)
     assert disciplina.nome == "Estrutura de Dados II"
 
