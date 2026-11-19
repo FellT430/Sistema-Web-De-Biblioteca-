@@ -5,6 +5,7 @@ Sistema web que conecta **professores, alunos e biblioteca**: professores relaci
 Projeto Final de Curso (PFC) — Bacharelado em Sistemas de Informação — Universidade de Mogi das Cruzes (UMC), 2026.
 Autores: Bruno Dante Nogueira Alves e Felipe Lima Torres.
 
+Acesse o sistema publicado: https://brunopyanywhe2.pythonanywhere.com
 ---
 
 ## Sumário
@@ -196,7 +197,7 @@ Os e-mails dos usuários de teste são fictícios; com o Mailtrap, nenhuma mensa
 
 ## Testes automatizados
 
-O projeto possui **94 testes automatizados** (pytest), com **81% de cobertura** do código do sistema. Eles cobrem as regras de empréstimo, reserva, notificações, LGPD, 2FA, integração com a Google Books (simulada), auditoria e os fluxos completos pelas rotas (front-end, back-end e banco integrados).
+O projeto possui **104 testes automatizados** (pytest), com **81% de cobertura** do código do sistema. Eles cobrem as regras de empréstimo, reserva, notificações, LGPD, 2FA, integração com a Google Books (simulada), auditoria e os fluxos completos pelas rotas (front-end, back-end e banco integrados).
 
 Os testes usam um banco SQLite em memória, não enviam e-mails e não alteram o banco nem o `.env` do projeto.
 
@@ -219,7 +220,7 @@ O resultado da última execução está em `back/relatorio_testes.txt`. Os teste
 
 ## Publicação (PythonAnywhere)
 
-- Aplicação Flask e banco MySQL hospedados no PythonAnywhere, com acesso via HTTPS.
+- Aplicação Flask e banco MySQL hospedados no PythonAnywhere, com acesso via HTTPS: https://brunopyanywhe2.pythonanywhere.com
 - As variáveis de ambiente são definidas no `.env` do servidor, com `FLASK_DEBUG=False`.
 - O agendador roda em um processo separado como **Always-on task**:
   ```bash
