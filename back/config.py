@@ -60,7 +60,7 @@ class Config:
     for _admin in SUPERADMINS:
         env_obrigatoria(_admin["variavel_senha"])
 
-    CONTATO_EMAIL = env("CONTATO_EMAIL", "contato@livromais.com")
+    CONTATO_EMAIL = env("CONTATO_EMAIL", "administracao.livromais@gmail.com")
 
     GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes"
     GOOGLE_BOOKS_API_KEY = env("GOOGLE_BOOKS_API_KEY", "")
