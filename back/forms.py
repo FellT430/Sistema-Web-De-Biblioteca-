@@ -51,6 +51,41 @@ def validar_ano_publicacao(form, campo):
         raise ValidationError(f"Informe um ano entre {ANO_MINIMO_PUBLICACAO} e {ano_atual}.")
 
 
+PARTICULAS_NOME = {"da", "de", "do", "das", "dos", "e"}
+_PALAVRA_NOME = re.compile(r"[^\W\d_]+(?:['\-][^\W\d_]+)*")
+
+
+def normalizar_nome(valor):
+    if not valor:
+        return valor
+    valor = valor.replace("’", "'")
+    palavras = valor.split()
+    resultado = []
+    for i, palavra in enumerate(palavras):
+        minuscula = palavra.lower()
+        if i > 0 and minuscula in PARTICULAS_NOME:
+            resultado.append(minuscula)
+            continue
+        partes = re.split(r"([-'])", minuscula)
+        resultado.append("".join(p[:1].upper() + p[1:] for p in partes))
+    return " ".join(resultado)
+
+
+def validar_nome_pessoa(form, campo):
+    nome = campo.data or ""
+    if any(c.isdigit() for c in nome):
+        raise ValidationError("O nome não pode conter números.")
+    palavras = nome.split()
+    if not all(_PALAVRA_NOME.fullmatch(p) for p in palavras):
+        raise ValidationError(
+            "O nome só pode conter letras, espaços, hífen (-) e apóstrofo ('), sem outros caracteres especiais."
+        )
+    if re.search(r"([^\W\d_])\1\1", nome, re.IGNORECASE):
+        raise ValidationError("O nome não pode ter a mesma letra repetida 3 ou mais vezes seguidas.")
+    if len(palavras) < 2:
+        raise ValidationError("Informe nome e sobrenome.")
+
+
 class LoginForm(FormularioBase):
     email = StringField("E-mail", validators=[DataRequired(), Email()])
     senha = PasswordField("Senha", validators=[DataRequired()])
@@ -73,7 +108,11 @@ class AcaoAdminForm(FormularioBase):
 
 
 class CadastroForm(FormularioBase):
-    nome = StringField("Nome completo", validators=[DataRequired(), Length(min=3, max=120)])
+    nome = StringField(
+        "Nome completo",
+        filters=[normalizar_nome],
+        validators=[DataRequired(), Length(min=5, max=120), validar_nome_pessoa],
+    )
     email = StringField("E-mail", validators=[DataRequired(), Email()])
     senha = PasswordField("Senha", validators=[DataRequired(), Length(min=6, message="A senha deve ter ao menos 6 caracteres.")])
     confirmar_senha = PasswordField(

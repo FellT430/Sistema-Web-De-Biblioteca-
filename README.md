@@ -197,8 +197,7 @@ Os e-mails dos usuários de teste são fictícios; com o Mailtrap, nenhuma mensa
 
 ## Testes automatizados
 
-O projeto possui **104 testes automatizados** (pytest), com **81% de cobertura** do código do sistema. Eles cobrem as regras de empréstimo, reserva, notificações, LGPD, 2FA, integração com a Google Books (simulada), auditoria e os fluxos completos pelas rotas (front-end, back-end e banco integrados).
-
+O projeto possui **125 testes automatizados** (pytest), com **82% de cobertura** do código do sistema. Eles cobrem as regras de empréstimo, reserva, notificações, LGPD, 2FA, validação do cadastro, integração com a Google Books (simulada), auditoria e os fluxos completos pelas rotas (front-end, back-end e banco integrados).
 Os testes usam um banco SQLite em memória, não enviam e-mails e não alteram o banco nem o `.env` do projeto.
 
 Dentro da pasta `back`, com o ambiente virtual ativado:
