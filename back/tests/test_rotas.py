@@ -1,5 +1,8 @@
 from datetime import date, timedelta
 
+import pytest
+
+from forms import normalizar_nome
 from models import (
     db, Usuario, StatusCadastro, Livro, Emprestimo, StatusEmprestimo, Reserva, StatusReserva,
     Disciplina, LogAuditoria,
@@ -44,7 +47,7 @@ def test_cadastro_com_dominio_de_aluno(client):
 
 def test_cadastro_com_dominio_invalido_e_recusado(client):
     client.post("/cadastro", data={
-        "nome": "Fulano", "email": "fulano@gmail.com", "senha": "Senha@123",
+        "nome": "Fulano Silva", "email": "fulano@gmail.com", "senha": "Senha@123",
         "confirmar_senha": "Senha@123", "aceite_termos": "y",
     })
     assert Usuario.query.filter_by(email="fulano@gmail.com").first() is None
@@ -52,10 +55,56 @@ def test_cadastro_com_dominio_invalido_e_recusado(client):
 
 def test_cadastro_sem_aceite_dos_termos_e_recusado(client):
     client.post("/cadastro", data={
-        "nome": "Fulano", "email": "fulano@aluno.com", "senha": "Senha@123",
+        "nome": "Fulano Silva", "email": "fulano@aluno.com", "senha": "Senha@123",
         "confirmar_senha": "Senha@123",
     })
     assert Usuario.query.filter_by(email="fulano@aluno.com").first() is None
+
+
+def _cadastrar_com_nome(client, nome):
+    return client.post("/cadastro", data={
+        "nome": nome, "email": "nome.teste@aluno.com", "senha": "Senha@123",
+        "confirmar_senha": "Senha@123", "aceite_termos": "y",
+    })
+
+
+@pytest.mark.parametrize("digitado, esperado", [
+    ("José da Conceição", "José da Conceição"),
+    ("Ana-Clara Souza", "Ana-Clara Souza"),
+    ("Pedro D'Ávila", "Pedro D'Ávila"),
+    ("Isaac Anna", "Isaac Anna"),
+    ("  maria   DA silva ", "Maria da Silva"),
+    ("ana-clara dos santos", "Ana-Clara dos Santos"),
+    ("pedro d'ávila", "Pedro D'Ávila"),
+    ("JOÃO E MARIA SOUZA", "João e Maria Souza"),
+])
+def test_cadastro_aceita_e_padroniza_nome(client, digitado, esperado):
+    _cadastrar_com_nome(client, digitado)
+    usuario = Usuario.query.filter_by(email="nome.teste@aluno.com").one()
+    assert usuario.nome == esperado
+
+
+@pytest.mark.parametrize("nome", [
+    "Maria Silva2",
+    "Maria S1lva",
+    "Maria Silva@",
+    "Maria_Silva Souza",
+    "Maria #Silva",
+    "Feeelipe Silva",
+    "FELIPE Siiilva",
+    "Fulano",
+    "Jo S",
+    "Ana-",
+    "   ",
+    "A" * 121 + " Silva",
+])
+def test_cadastro_recusa_nome_invalido(client, nome):
+    _cadastrar_com_nome(client, nome)
+    assert Usuario.query.filter_by(email="nome.teste@aluno.com").first() is None
+
+
+def test_normalizar_nome_trata_none():
+    assert normalizar_nome(None) is None
 
 
 def test_link_de_confirmacao_libera_para_aprovacao(app, client, fabrica):

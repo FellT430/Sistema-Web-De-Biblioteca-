@@ -1,5 +1,5 @@
-﻿........................................................................ [ 69%]
-................................                                         [100%]
+﻿........................................................................ [ 57%]
+.....................................................                    [100%]
 
 ---------- coverage: platform win32, python 3.14.4-final-0 -----------
 Name                                      Stmts   Miss  Cover   Missing
@@ -17,7 +17,7 @@ controllers\livros_controller.py             99     18    82%   48-63, 70-80, 16
 controllers\notificacoes_controller.py       46     13    72%   15, 36-42, 49-53
 controllers\recomendacoes_controller.py      20      0   100%
 decorators.py                                16      1    94%   13
-forms.py                                     76     10    87%   29, 33-38, 42-43, 51
+forms.py                                    103     10    90%   29, 33-38, 42-43, 51
 models\__init__.py                           12      0   100%
 models\codigo_recuperacao.py                 12      0   100%
 models\disciplina.py                         38     10    74%   59, 65, 68-69, 73, 76-79, 82
@@ -42,6 +42,6 @@ services\privacidade.py                      90      8    91%   65, 85, 125-127,
 services\reservas.py                        115      9    92%   88, 92, 151-153, 187-190
 services\superadmin.py                       23      6    74%   11, 22-26, 39-41
 -----------------------------------------------------------------------
-TOTAL                                      2320    430    81%
+TOTAL                                      2347    430    82%
 
-104 passed in 46.52s
+125 passed in 55.39s

@@ -21,7 +21,7 @@
 
                     <div class="mb-3">
                         {{ form.nome.label(class="form-label") }}
-                        {{ form.nome(class="form-control" + (" is-invalid" if form.nome.errors else ""), placeholder="Nome completo") }}
+                        {{ form.nome(class="form-control" + (" is-invalid" if form.nome.errors else ""), placeholder="Digite seu nome completo") }}
                         {% for erro in form.nome.errors %}
                             <div class="invalid-feedback">{{ erro }}</div>
                         {% endfor %}
